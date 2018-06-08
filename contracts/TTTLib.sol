@@ -1,11 +1,10 @@
-pragma solidity ^0.4.23;
+pragma solidity 0.4.24;
 
 
-library TTTLibrary {
+library TTTLib {
     // player ID starts at 1
 
     struct State {
-        uint nextTurn;
         mapping(uint => mapping(uint => uint)) board;
     }
 
@@ -19,27 +18,72 @@ library TTTLibrary {
         internal pure
         returns (State)
     {
-        return State({
-            nextTurn: 1
-        });
+        return State();
     }
 
-    function move(State storage state, Input memory input)
-        internal
+    function next(State storage state, uint control)
+        internal view
+        returns (uint)
+    {
+        if (control == 1) {
+            return 2;
+        } else if (control == 2) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    function legal(State storage state, uint control, Input memory input)
+        internal view
         returns (bool)
     {
-        require(validateInput(state, input));
-        state.board[input.x][input.y] = input.playerID;
-        if (input.playerID == 1) {
-            state.nextTurn = 2;
-        } else {
-            state.nextTurn = 1;
+        // player must take turns
+        if (control != input.playerID) {
+            return false;
+        }
+        // xy not out of range
+        if (input.x < 0 && input.x > 2 && input.y < 0 && input.y > 2) {
+            return false;
+        }
+        // place on empty spot
+        if (state.board[input.x][input.y] != 0) {
+            return false;
         }
         return true;
     }
 
+    function terminal(State storage state)
+        internal view
+        returns (bool)
+    {
+        // either board is full or someone has won the game
+        if (boardFull(state)) {
+            return true;
+        }
+        if (checkWinner(state) != 0) {
+            return true;
+        }
+        return false;
+    }
+
+    function goal(State storage state, uint playerID)
+        internal view
+        returns (uint)
+    {
+        uint winnerID = checkWinner(state);
+        if (winnerID == playerID) {
+            return 100;
+        } else {
+            return 0;
+        }
+    }
+
+    /* Private functions */
+
+    // 0 no winner yet, 1 or 2 if any player has won the game
     function checkWinner(State storage state)
-        public view
+        private view
         returns (uint)
     {
         // XXX
@@ -69,24 +113,6 @@ library TTTLibrary {
         }
 
         return 0;
-    }
-
-    /* Private functions */
-
-    function validateInput(State storage state, Input memory input)
-        private view
-        returns (bool)
-    {
-        // return true or revert
-        // player ID is 1 or 2
-        require(input.playerID == 1 || input.playerID == 2);
-        // player must take turns
-        require(state.nextTurn == input.playerID);
-        // xy not out of range
-        require(input.x >= 0 && input.x <= 2 && input.y >= 0 && input.y <= 2);
-        // place on empty spot
-        require(state.board[input.x][input.y] == 0);
-        return true;
     }
 
     function boardFull(State storage state)

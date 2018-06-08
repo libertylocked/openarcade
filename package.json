@@ -6,6 +6,7 @@
   "scripts": {
     "start": "ganache-cli -p 7545 -i 5777",
     "lint": "solium -d .",
+    "compile": "truffle compile",
     "migrate": "truffle migrate",
     "test": "truffle test",
     "coverage": "solidity-coverage"
@@ -22,10 +23,9 @@
   "homepage": "https://github.com/libertylocked/openarcade#readme",
   "devDependencies": {
     "babel-polyfill": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-preset-stage-2": "^6.24.1",
-    "babel-preset-stage-3": "^6.24.1",
+    "babel-preset-env": "^1.7.0",
     "babel-register": "^6.26.0",
+    "babel-runtime": "^6.26.0",
     "ethereumjs-util": "^5.2.0",
     "ganache-cli": "^6.1.0",
     "solidity-coverage": "^0.5.2",
