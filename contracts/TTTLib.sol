@@ -93,41 +93,49 @@ library TTTLib {
         returns (uint)
     {
         // XXX
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[0][0].pid != 0 &&
             state.board[0][0].pid == state.board[0][1].pid &&
             state.board[0][0].pid == state.board[0][2].pid) {
             return state.board[0][0].pid;
         }
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[1][0].pid != 0 &&
             state.board[1][0].pid == state.board[1][1].pid &&
             state.board[1][0].pid == state.board[1][2].pid) {
             return state.board[1][0].pid;
         }
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[2][0].pid != 0 &&
             state.board[2][0].pid == state.board[2][1].pid &&
             state.board[2][0].pid == state.board[2][2].pid) {
             return state.board[2][0].pid;
         }
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[0][0].pid != 0 &&
             state.board[0][0].pid == state.board[1][0].pid &&
             state.board[0][0].pid == state.board[2][0].pid) {
             return state.board[0][0].pid;
         }
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[0][1].pid != 0 &&
             state.board[0][1].pid == state.board[1][1].pid &&
             state.board[0][1].pid == state.board[2][1].pid) {
             return state.board[0][1].pid;
         }
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[0][2].pid != 0 &&
             state.board[0][2].pid == state.board[1][2].pid &&
             state.board[0][2].pid == state.board[2][2].pid) {
             return state.board[0][2].pid;
         }
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[0][0].pid != 0 &&
             state.board[0][0].pid == state.board[1][1].pid &&
             state.board[0][0].pid == state.board[2][2].pid) {
             return state.board[0][0].pid;
         }
+        /* solium-disable-next-line operator-whitespace */
         if (state.board[2][0].pid != 0 &&
             state.board[2][0].pid == state.board[1][1].pid &&
             state.board[2][0].pid == state.board[0][2].pid) {
