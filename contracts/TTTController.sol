@@ -16,7 +16,9 @@ contract TTTController {
     uint public control;
     uint constant public BET_AMOUNT = 1 ether;
 
-    event LogPlayerMove(address player, uint x, uint y);
+    event LogPlayerMove(
+        address indexed player, uint pid, uint x, uint y, uint mark
+    );
     event LogPayout(address player, uint amount);
 
     modifier gameStarted() {
@@ -80,7 +82,7 @@ contract TTTController {
         });
         control = GameLib.next(state, control);
         // emit log
-        emit LogPlayerMove(msg.sender, x, y);
+        emit LogPlayerMove(msg.sender, playerID, x, y, mark);
     }
 
     function payout()
