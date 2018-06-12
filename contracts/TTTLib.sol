@@ -2,16 +2,22 @@ pragma solidity 0.4.24;
 
 
 library TTTLib {
-    // player ID starts at 1
+    // pid (player ID) is non zero
 
     struct State {
-        mapping(uint => mapping(uint => uint)) board;
+        mapping(uint => mapping(uint => Piece)) board;
+    }
+
+    struct Piece {
+        uint pid; // 0 for no owner
+        uint mark; // in TTT this is not used
     }
 
     struct Input {
-        uint playerID;
+        uint pid;
         uint x;
         uint y;
+        uint mark;
     }
 
     function init()
@@ -39,7 +45,7 @@ library TTTLib {
         returns (bool)
     {
         // player must take turns
-        if (control != input.playerID) {
+        if (control != input.pid) {
             return false;
         }
         // xy not out of range
@@ -47,7 +53,7 @@ library TTTLib {
             return false;
         }
         // place on empty spot
-        if (state.board[input.x][input.y] != 0) {
+        if (state.board[input.x][input.y].pid != 0) {
             return false;
         }
         return true;
@@ -67,12 +73,12 @@ library TTTLib {
         return false;
     }
 
-    function goal(State storage state, uint playerID)
+    function goal(State storage state, uint pid)
         internal view
         returns (uint)
     {
         uint winnerID = checkWinner(state);
-        if (winnerID == playerID) {
+        if (winnerID == pid) {
             return 100;
         } else {
             return 0;
@@ -87,29 +93,45 @@ library TTTLib {
         returns (uint)
     {
         // XXX
-        if (state.board[0][0] != 0 && state.board[0][0] == state.board[0][1] && state.board[0][0] == state.board[0][2]) {
-            return state.board[0][0];
+        if (state.board[0][0].pid != 0 &&
+            state.board[0][0].pid == state.board[0][1].pid &&
+            state.board[0][0].pid == state.board[0][2].pid) {
+            return state.board[0][0].pid;
         }
-        if (state.board[1][0] != 0 && state.board[1][0] == state.board[1][1] && state.board[1][0] == state.board[1][2]) {
-            return state.board[1][0];
+        if (state.board[1][0].pid != 0 &&
+            state.board[1][0].pid == state.board[1][1].pid &&
+            state.board[1][0].pid == state.board[1][2].pid) {
+            return state.board[1][0].pid;
         }
-        if (state.board[2][0] != 0 && state.board[2][0] == state.board[2][1] && state.board[2][0] == state.board[2][2]) {
-            return state.board[2][0];
+        if (state.board[2][0].pid != 0 &&
+            state.board[2][0].pid == state.board[2][1].pid &&
+            state.board[2][0].pid == state.board[2][2].pid) {
+            return state.board[2][0].pid;
         }
-        if (state.board[0][0] != 0 && state.board[0][0] == state.board[1][0] && state.board[0][0] == state.board[2][0]) {
-            return state.board[0][0];
+        if (state.board[0][0].pid != 0 &&
+            state.board[0][0].pid == state.board[1][0].pid &&
+            state.board[0][0].pid == state.board[2][0].pid) {
+            return state.board[0][0].pid;
         }
-        if (state.board[0][1] != 0 && state.board[0][1] == state.board[1][1] && state.board[0][1] == state.board[2][1]) {
-            return state.board[0][1];
+        if (state.board[0][1].pid != 0 &&
+            state.board[0][1].pid == state.board[1][1].pid &&
+            state.board[0][1].pid == state.board[2][1].pid) {
+            return state.board[0][1].pid;
         }
-        if (state.board[0][2] != 0 && state.board[0][2] == state.board[1][2] && state.board[0][2] == state.board[2][2]) {
-            return state.board[0][2];
+        if (state.board[0][2].pid != 0 &&
+            state.board[0][2].pid == state.board[1][2].pid &&
+            state.board[0][2].pid == state.board[2][2].pid) {
+            return state.board[0][2].pid;
         }
-        if (state.board[0][0] != 0 && state.board[0][0] == state.board[1][1] && state.board[0][0] == state.board[2][2]) {
-            return state.board[0][0];
+        if (state.board[0][0].pid != 0 &&
+            state.board[0][0].pid == state.board[1][1].pid &&
+            state.board[0][0].pid == state.board[2][2].pid) {
+            return state.board[0][0].pid;
         }
-        if (state.board[2][0] != 0 && state.board[2][0] == state.board[1][1] && state.board[2][0] == state.board[0][2]) {
-            return state.board[2][0];
+        if (state.board[2][0].pid != 0 &&
+            state.board[2][0].pid == state.board[1][1].pid &&
+            state.board[2][0].pid == state.board[0][2].pid) {
+            return state.board[2][0].pid;
         }
 
         return 0;
@@ -121,7 +143,7 @@ library TTTLib {
     {
         for (uint x = 0; x < 3; x++) {
             for (uint y = 0; y < 3; y++) {
-                if (state.board[x][y] == 0) {
+                if (state.board[x][y].pid == 0) {
                     return false;
                 }
             }

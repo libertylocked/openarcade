@@ -51,7 +51,7 @@ contract TTTController {
         }
     }
 
-    function play(uint x, uint y)
+    function play(uint x, uint y, uint mark)
         playerOnly
         gameStarted
         public
@@ -64,16 +64,20 @@ contract TTTController {
         }
 
         GameLib.Input memory input = GameLib.Input({
-            playerID: playerID,
+            pid: playerID,
             x: x,
-            y: y
+            y: y,
+            mark: mark
         });
         // check if legal
         require(GameLib.legal(state, control, input));
         // game must not be in terminal state
         require(GameLib.terminal(state) == false);
         // update state
-        state.board[input.x][input.y] = input.playerID;
+        state.board[input.x][input.y] = GameLib.Piece({
+            pid: playerID,
+            mark: mark
+        });
         control = GameLib.next(state, control);
         // emit log
         emit LogPlayerMove(msg.sender, x, y);
@@ -124,8 +128,8 @@ contract TTTController {
 
     function cell(uint x, uint y)
         public view
-        returns (uint)
+        returns (uint, uint)
     {
-        return state.board[x][y];
+        return (state.board[x][y].pid, state.board[x][y].mark);
     }
 }
