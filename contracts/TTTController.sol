@@ -1,4 +1,5 @@
 pragma solidity 0.4.24;
+pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import { TTTLib as GameLib } from "./TTTLib.sol";
@@ -16,7 +17,7 @@ contract TTTController {
     uint constant public BET_AMOUNT = 1 ether;
 
     event LogPlayerMove(
-        address indexed player, uint pid, uint x, uint y, uint move
+        address indexed player, uint pid, bytes selector, uint move
     );
     event LogPayout(address player, uint amount);
 
@@ -53,7 +54,7 @@ contract TTTController {
         }
     }
 
-    function play(uint x, uint y, uint move)
+    function play(bytes selector, uint move)
         playerOnly
         gameStarted
         public
@@ -67,8 +68,7 @@ contract TTTController {
 
         GameLib.Input memory input = GameLib.Input({
             pid: playerID,
-            x: x,
-            y: y,
+            selector: selector,
             move: move
         });
         // check if legal
@@ -78,12 +78,12 @@ contract TTTController {
         // update game state
         GameLib.Update[] memory updates = GameLib.update(state, input);
         for (uint i = 0; i < updates.length; i++) {
-            state.board[updates[i].x][updates[i].y] = updates[i].piece;
+            state.board[updates[i].selector] = updates[i].piece;
         }
         // update control
         state.control = GameLib.next(state);
         // emit log
-        emit LogPlayerMove(msg.sender, playerID, x, y, move);
+        emit LogPlayerMove(msg.sender, playerID, selector, move);
     }
 
     function payout()
@@ -129,11 +129,11 @@ contract TTTController {
         return GameLib.terminal(state);
     }
 
-    function cell(uint x, uint y)
+    function piece(bytes selector)
         public view
-        returns (uint, uint)
+        returns (GameLib.Piece)
     {
-        return (state.board[x][y].pid, state.board[x][y].mark);
+        return state.board[selector];
     }
 
     function control()

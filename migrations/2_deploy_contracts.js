@@ -5,6 +5,7 @@ const TTTController = artifacts.require("./TTTController.sol")
 module.exports = (deployer, network, accounts) => {
   deployer.deploy(PlatformLib)
   deployer.deploy(TTTLib)
+  deployer.link(PlatformLib, TTTController)
   deployer.link(TTTLib, TTTController)
   deployer.deploy(TTTController, accounts[0], accounts[1])
 }

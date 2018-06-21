@@ -2,14 +2,33 @@ pragma solidity 0.4.24;
 
 
 library PlatformLib {
-    function serializePoint2D(uint x, uint y)
+    function encodePoint1D(uint x)
+        public pure
+        returns (bytes)
+    {
+        return abi.encode(x);
+    }
+
+    function decodePoint1D(bytes s)
+        public pure
+        returns (uint)
+    {
+        require(s.length == 32);
+        uint x = 0;
+        for (uint i = 0; i < 32; i++) {
+            x = x | uint(s[31-i]) << i * 8;
+        }
+        return x;
+    }
+
+    function encodePoint2D(uint x, uint y)
         public pure
         returns (bytes)
     {
         return abi.encode(x, y);
     }
 
-    function deserializePoint2D(bytes s)
+    function decodePoint2D(bytes s)
         public pure
         returns (uint, uint)
     {
@@ -23,14 +42,14 @@ library PlatformLib {
         return (x, y);
     }
 
-    function serializePoint3D(uint x, uint y, uint z)
+    function encodePoint3D(uint x, uint y, uint z)
         public pure
         returns (bytes)
     {
         return abi.encode(x, y, z);
     }
 
-    function deserializePoint3D(bytes s)
+    function decodePoint3D(bytes s)
         public pure
         returns (uint, uint, uint)
     {

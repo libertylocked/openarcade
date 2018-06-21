@@ -7,32 +7,32 @@ contract("PlatformLib", () => {
   before("get deployed lib instance", async () => {
     lib = await PlatformLib.deployed()
   })
-  describe("serialize point 2D", () => {
-    it("should serialize a 2D point correctly", async () => {
+  describe("point 2D encoding", () => {
+    it("should encode a 2D point correctly", async () => {
       const expected = eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [320, 640]))
-      const res = await lib.serializePoint2D(320, 640)
+      const res = await lib.encodePoint2D(320, 640)
       assert.equal(res, expected)
     })
-    it("should deserialize a 2D point correctly", async () => {
+    it("should decode a 2D point correctly", async () => {
       const encoded = eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [320, 640]))
-      const res = await lib.deserializePoint2D(encoded)
+      const res = await lib.decodePoint2D(encoded)
       assert.equal(res[0].toNumber(), 320)
       assert.equal(res[1].toNumber(), 640)
     })
   })
-  describe("serialize point 3D", () => {
-    it("should serialize a 3D point correctly", async () => {
+  describe("point 3D encoding", () => {
+    it("should encode a 3D point correctly", async () => {
       const expected = eutil.bufferToHex(
         abi.rawEncode(['uint256', 'uint256', 'uint256'], [320, 640, 960])
       )
-      const res = await lib.serializePoint3D(320, 640, 960)
+      const res = await lib.encodePoint3D(320, 640, 960)
       assert.equal(res, expected)
     })
-    it("should deserialize a 3D point correctly", async () => {
+    it("should decode a 3D point correctly", async () => {
       const encoded = eutil.bufferToHex(
         abi.rawEncode(['uint256', 'uint256', 'uint256'], [320, 640, 960])
       )
-      const res = await lib.deserializePoint3D(encoded)
+      const res = await lib.decodePoint3D(encoded)
       assert.equal(res[0].toNumber(), 320)
       assert.equal(res[1].toNumber(), 640)
       assert.equal(res[2].toNumber(), 960)

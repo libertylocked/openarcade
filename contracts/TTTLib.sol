@@ -1,10 +1,13 @@
 pragma solidity 0.4.24;
 
+import "./PlatformLib.sol";
+
+
 library TTTLib {
     // pid (player ID) is non zero
 
     struct State {
-        mapping(uint => mapping(uint => Piece)) board;
+        mapping(bytes => Piece) board;
         uint control;
     }
 
@@ -14,15 +17,13 @@ library TTTLib {
     }
 
     struct Update {
-        uint x;
-        uint y;
+        bytes selector;
         Piece piece;
     }
 
     struct Input {
         uint pid;
-        uint x;
-        uint y;
+        bytes selector;
         uint move;
     }
 
@@ -50,9 +51,6 @@ library TTTLib {
         }
     }
 
-    /**
-     * Updates board
-     */
     function update(State storage state, Input memory input)
         internal view
         returns (Update[])
@@ -60,8 +58,7 @@ library TTTLib {
         // in TTT only one piece is updated
         Update[] memory arr = new Update[](1);
         arr[0] = Update({
-            x: input.x,
-            y: input.y,
+            selector: input.selector,
             piece: Piece({
                 pid: input.pid,
                 mark: input.move
@@ -74,16 +71,19 @@ library TTTLib {
         internal view
         returns (bool)
     {
+        uint x = 0;
+        uint y = 0;
+        (x, y) = decodeSelector(input.selector);
         // player must take turns
         if (state.control != input.pid) {
             return false;
         }
-        // xy not out of range
-        if (input.x < 0 && input.x > 2 && input.y < 0 && input.y > 2) {
+        // xy must not be out of range
+        if (x < 0 && x > 2 && y < 0 && y > 2) {
             return false;
         }
-        // place on empty spot
-        if (state.board[input.x][input.y].pid != 0) {
+        // must place on empty spot
+        if (state.board[input.selector].pid != 0) {
             return false;
         }
         return true;
@@ -116,6 +116,19 @@ library TTTLib {
     }
 
     /* Private functions */
+    function decodeSelector(bytes s)
+        private pure
+        returns (uint, uint)
+    {
+        return PlatformLib.decodePoint2D(s);
+    }
+
+    function encodeSelector(uint x, uint y)
+        private pure
+        returns (bytes)
+    {
+        return PlatformLib.encodePoint2D(x, y);
+    }
 
     // 0 no winner yet, 1 or 2 if any player has won the game
     function checkWinner(State storage state)
@@ -123,55 +136,52 @@ library TTTLib {
         returns (uint)
     {
         // XXX
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[0][0].pid != 0 &&
-            state.board[0][0].pid == state.board[0][1].pid &&
-            state.board[0][0].pid == state.board[0][2].pid) {
-            return state.board[0][0].pid;
+        // maybe excessive gas usage
+        for (uint i = 0; i < 3; i++) {
+            uint colWinner = state.board[encodeSelector(i, 0)].pid;
+            uint rowWinner = state.board[encodeSelector(0, i)].pid;
+            for (uint j = 1; j < 3; j++) {
+                if (colWinner != 0) {
+                    bytes memory colSelect = encodeSelector(i, j);
+                    if (state.board[colSelect].pid != colWinner) {
+                        colWinner = 0;
+                    }
+                }
+                if (rowWinner != 0) {
+                    bytes memory rowSelect = encodeSelector(j, i);
+                    if (state.board[rowSelect].pid != rowWinner) {
+                        rowWinner = 0;
+                    }
+                }
+            }
+            if (colWinner != 0) {
+                return colWinner;
+            } else if (rowWinner != 0) {
+                return rowWinner;
+            }
         }
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[1][0].pid != 0 &&
-            state.board[1][0].pid == state.board[1][1].pid &&
-            state.board[1][0].pid == state.board[1][2].pid) {
-            return state.board[1][0].pid;
+        // check diagonals
+        uint ltrWinner = state.board[encodeSelector(0, 0)].pid;
+        uint rtlWinner = state.board[encodeSelector(2, 0)].pid;
+        for (i = 1; i < 3; i++) {
+            if (ltrWinner != 0) {
+                bytes memory ltrSelect = encodeSelector(i, i);
+                if (state.board[ltrSelect].pid != ltrWinner) {
+                    ltrWinner = 0;
+                }
+            }
+            if (rtlWinner != 0) {
+                bytes memory rtlSelect = encodeSelector(2-i, i);
+                if (state.board[rtlSelect].pid != rtlWinner) {
+                    rtlWinner = 0;
+                }
+            }
         }
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[2][0].pid != 0 &&
-            state.board[2][0].pid == state.board[2][1].pid &&
-            state.board[2][0].pid == state.board[2][2].pid) {
-            return state.board[2][0].pid;
+        if (ltrWinner != 0) {
+            return ltrWinner;
+        } else if (rtlWinner != 0) {
+            return rtlWinner;
         }
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[0][0].pid != 0 &&
-            state.board[0][0].pid == state.board[1][0].pid &&
-            state.board[0][0].pid == state.board[2][0].pid) {
-            return state.board[0][0].pid;
-        }
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[0][1].pid != 0 &&
-            state.board[0][1].pid == state.board[1][1].pid &&
-            state.board[0][1].pid == state.board[2][1].pid) {
-            return state.board[0][1].pid;
-        }
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[0][2].pid != 0 &&
-            state.board[0][2].pid == state.board[1][2].pid &&
-            state.board[0][2].pid == state.board[2][2].pid) {
-            return state.board[0][2].pid;
-        }
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[0][0].pid != 0 &&
-            state.board[0][0].pid == state.board[1][1].pid &&
-            state.board[0][0].pid == state.board[2][2].pid) {
-            return state.board[0][0].pid;
-        }
-        /* solium-disable-next-line operator-whitespace */
-        if (state.board[2][0].pid != 0 &&
-            state.board[2][0].pid == state.board[1][1].pid &&
-            state.board[2][0].pid == state.board[0][2].pid) {
-            return state.board[2][0].pid;
-        }
-
         return 0;
     }
 
@@ -181,7 +191,7 @@ library TTTLib {
     {
         for (uint x = 0; x < 3; x++) {
             for (uint y = 0; y < 3; y++) {
-                if (state.board[x][y].pid == 0) {
+                if (state.board[encodeSelector(x, y)].pid == 0) {
                     return false;
                 }
             }
