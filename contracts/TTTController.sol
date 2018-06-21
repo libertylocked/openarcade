@@ -1,5 +1,4 @@
 pragma solidity 0.4.24;
-pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import { TTTLib as GameLib } from "./TTTLib.sol";
