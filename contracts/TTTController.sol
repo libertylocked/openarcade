@@ -13,11 +13,10 @@ contract TTTController {
 
     address public player1;
     address public player2;
-    uint public control;
     uint constant public BET_AMOUNT = 1 ether;
 
     event LogPlayerMove(
-        address indexed player, uint pid, uint x, uint y, uint mark
+        address indexed player, uint pid, uint x, uint y, uint move
     );
     event LogPayout(address player, uint amount);
 
@@ -33,7 +32,8 @@ contract TTTController {
 
     constructor(address _player1, address _player2) public {
         state = GameLib.init();
-        control = 1;
+        // TODO: set control randomly maybe
+        state.control = 1;
         player1 = _player1;
         player2 = _player2;
     }
@@ -53,7 +53,7 @@ contract TTTController {
         }
     }
 
-    function play(uint x, uint y, uint mark)
+    function play(uint x, uint y, uint move)
         playerOnly
         gameStarted
         public
@@ -69,20 +69,21 @@ contract TTTController {
             pid: playerID,
             x: x,
             y: y,
-            mark: mark
+            move: move
         });
         // check if legal
-        require(GameLib.legal(state, control, input));
+        require(GameLib.legal(state, input));
         // game must not be in terminal state
         require(GameLib.terminal(state) == false);
-        // update state
-        state.board[input.x][input.y] = GameLib.Piece({
-            pid: playerID,
-            mark: mark
-        });
-        control = GameLib.next(state, control);
+        // update game state
+        GameLib.Update[] memory updates = GameLib.update(state, input);
+        for (uint i = 0; i < updates.length; i++) {
+            state.board[updates[i].x][updates[i].y] = updates[i].piece;
+        }
+        // update control
+        state.control = GameLib.next(state);
         // emit log
-        emit LogPlayerMove(msg.sender, playerID, x, y, mark);
+        emit LogPlayerMove(msg.sender, playerID, x, y, move);
     }
 
     function payout()
@@ -133,5 +134,12 @@ contract TTTController {
         returns (uint, uint)
     {
         return (state.board[x][y].pid, state.board[x][y].mark);
+    }
+
+    function control()
+        public view
+        returns (uint)
+    {
+        return state.control;
     }
 }

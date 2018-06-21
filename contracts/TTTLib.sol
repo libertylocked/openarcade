@@ -1,11 +1,11 @@
 pragma solidity 0.4.24;
 
-
 library TTTLib {
     // pid (player ID) is non zero
 
     struct State {
         mapping(uint => mapping(uint => Piece)) board;
+        uint control;
     }
 
     struct Piece {
@@ -13,39 +13,69 @@ library TTTLib {
         uint mark; // in TTT this is not used
     }
 
+    struct Update {
+        uint x;
+        uint y;
+        Piece piece;
+    }
+
     struct Input {
         uint pid;
         uint x;
         uint y;
-        uint mark;
+        uint move;
     }
 
+    /// Inits game state
+    /// @return the initial game state
     function init()
         internal pure
         returns (State)
     {
-        return State();
+        return State({
+            control: 0
+        });
     }
 
-    function next(State storage state, uint control)
+    function next(State storage state)
         internal view
         returns (uint)
     {
-        if (control == 1) {
+        if (state.control == 1) {
             return 2;
-        } else if (control == 2) {
+        } else if (state.control == 2) {
             return 1;
         } else {
             return 0;
         }
     }
 
-    function legal(State storage state, uint control, Input memory input)
+    /**
+     * Updates board
+     */
+    function update(State storage state, Input memory input)
+        internal view
+        returns (Update[])
+    {
+        // in TTT only one piece is updated
+        Update[] memory arr = new Update[](1);
+        arr[0] = Update({
+            x: input.x,
+            y: input.y,
+            piece: Piece({
+                pid: input.pid,
+                mark: input.move
+            })
+        });
+        return arr;
+    }
+
+    function legal(State storage state, Input memory input)
         internal view
         returns (bool)
     {
         // player must take turns
-        if (control != input.pid) {
+        if (state.control != input.pid) {
             return false;
         }
         // xy not out of range

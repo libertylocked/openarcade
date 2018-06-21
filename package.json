@@ -26,6 +26,7 @@
     "babel-preset-env": "^1.7.0",
     "babel-register": "^6.26.0",
     "babel-runtime": "^6.26.0",
+    "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^5.2.0",
     "ganache-cli": "^6.1.0",
     "solidity-coverage": "^0.5.2",
