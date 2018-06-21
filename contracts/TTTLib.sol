@@ -26,7 +26,6 @@ library TTTLib {
     // Can be freely defined in game library
     struct Cell {
         uint pid; // 0 for no owner
-        uint mark; // in TTT this is not used
     }
 
     /// Inits game state
@@ -62,8 +61,7 @@ library TTTLib {
         arr[0] = Update({
             selector: input.selector,
             cell: Cell({
-                pid: input.pid,
-                mark: input.action
+                pid: input.pid
             })
         });
         return arr;
