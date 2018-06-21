@@ -1,0 +1,5 @@
+- site-effect board updates
+  - lib should tell ctrl what pieces updated and what to update to
+- marks in input and state
+  - serialize piece or input?
+- non 2d grids
