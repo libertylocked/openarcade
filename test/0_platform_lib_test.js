@@ -7,6 +7,18 @@ contract("PlatformLib", () => {
   before("get deployed lib instance", async () => {
     lib = await PlatformLib.deployed()
   })
+  describe("point 1D encoding", () => {
+    it("should encode a 1D point correctly", async () => {
+      const expected = eutil.bufferToHex(abi.rawEncode(['uint256'], [320]))
+      const res = await lib.encodePoint1D(320)
+      assert.equal(res, expected)
+    })
+    it("should decode a 1D point correctly", async () => {
+      const encoded = eutil.bufferToHex(abi.rawEncode(['uint256'], [320]))
+      const res = await lib.decodePoint1D(encoded)
+      assert.equal(res.toNumber(), 320)
+    })
+  })
   describe("point 2D encoding", () => {
     it("should encode a 2D point correctly", async () => {
       const expected = eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [320, 640]))
