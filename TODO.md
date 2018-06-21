@@ -1,3 +1,5 @@
-- marks in input and state
-  - serialize piece or input?
-- non 2d grids
+- Marks in input and state
+  - Serialize input
+- Automatically find the encodings on client-side
+  - Define encoding function in game lib
+  - Use game lib ABI
