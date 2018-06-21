@@ -7,24 +7,26 @@ library TTTLib {
     // pid (player ID) is non zero
 
     struct State {
-        mapping(bytes => Piece) board;
+        mapping(bytes => Cell) board;
         uint control;
-    }
-
-    struct Piece {
-        uint pid; // 0 for no owner
-        uint mark; // in TTT this is not used
     }
 
     struct Update {
         bytes selector;
-        Piece piece;
+        Cell cell;
     }
 
     struct Input {
         uint pid;
         bytes selector;
-        uint move;
+        uint action;
+    }
+
+    // Cell in a game board
+    // Can be freely defined in game library
+    struct Cell {
+        uint pid; // 0 for no owner
+        uint mark; // in TTT this is not used
     }
 
     /// Inits game state
@@ -55,13 +57,13 @@ library TTTLib {
         internal view
         returns (Update[])
     {
-        // in TTT only one piece is updated
+        // in TTT only one cell is updated
         Update[] memory arr = new Update[](1);
         arr[0] = Update({
             selector: input.selector,
-            piece: Piece({
+            cell: Cell({
                 pid: input.pid,
-                mark: input.move
+                mark: input.action
             })
         });
         return arr;
