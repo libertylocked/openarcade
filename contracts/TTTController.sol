@@ -16,7 +16,7 @@ contract TTTController {
     uint constant public BET_AMOUNT = 1 ether;
 
     event LogPlayerMove(
-        address indexed player, uint pid, bytes selector, uint action
+        address indexed player, uint pid, bytes action
     );
     event LogPayout(address player, uint amount);
 
@@ -53,7 +53,7 @@ contract TTTController {
         }
     }
 
-    function play(bytes selector, uint action)
+    function play(bytes action)
         playerOnly
         gameStarted
         public
@@ -67,8 +67,7 @@ contract TTTController {
 
         GameLib.Input memory input = GameLib.Input({
             pid: playerID,
-            selector: selector,
-            action: action
+            action: GameLib.decodeAction(action)
         });
         // check if legal
         require(GameLib.legal(state, input));
@@ -82,7 +81,7 @@ contract TTTController {
         // update control
         state.control = GameLib.next(state);
         // emit log
-        emit LogPlayerMove(msg.sender, playerID, selector, action);
+        emit LogPlayerMove(msg.sender, playerID, action);
     }
 
     function payout()

@@ -4,7 +4,15 @@ import "./PlatformLib.sol";
 
 
 library TTTLib {
-    // pid (player ID) is non zero
+    // Tic Tac Toe game library.
+    // No function in the library should mutate the state.
+    // Some structs can be freely defined, others must follow certain
+    //  standards.
+    // Internal functions and public functions are strictly defined, their
+    //  function signatures should be consistent in all games.
+    // Note: pid (player ID) is always non zero.
+
+    /* Structs */
 
     struct State {
         mapping(bytes => Cell) board;
@@ -12,21 +20,36 @@ library TTTLib {
     }
 
     struct Update {
-        bytes selector;
-        Cell cell;
+        bytes selector; // which cell to update
+        Cell cell; // what to update it to
     }
 
     struct Input {
         uint pid;
-        bytes selector;
-        uint action;
+        Action action;
+    }
+
+    // A player Action
+    // Can be freely defined in game library
+    struct Action {
+        // In TTT, action is simply the location player wants to place a piece
+        // at. In other games, this may also include the mark on a cell, or
+        // even stuff like directions. Anything you want.
+        uint x;
+        uint y;
     }
 
     // Cell in a game board
     // Can be freely defined in game library
     struct Cell {
-        uint pid; // 0 for no owner
+        // In TTT, only the player who owns the cell is needed in a piece
+        // Use 0 for no owner
+        uint pid;
     }
+
+    /* Internal functions */
+    // All internal functions must be defined with the exact function
+    // signatures.
 
     /// Inits game state
     /// @return the initial game state
@@ -39,10 +62,13 @@ library TTTLib {
         });
     }
 
+    /// Gets the next player in control
+    /// @return the ID of the next player in control
     function next(State storage state)
         internal view
         returns (uint)
     {
+        // In TTT simply alternate
         if (state.control == 1) {
             return 2;
         } else if (state.control == 2) {
@@ -52,14 +78,17 @@ library TTTLib {
         }
     }
 
+    /// Gets the game state updates
+    /// @return An array of state updates
     function update(State storage state, Input memory input)
         internal view
         returns (Update[])
     {
         // in TTT only one cell is updated
+        Action memory action = input.action;
         Update[] memory arr = new Update[](1);
         arr[0] = Update({
-            selector: input.selector,
+            selector: encodeSelector(action.x, action.y),
             cell: Cell({
                 pid: input.pid
             })
@@ -67,13 +96,14 @@ library TTTLib {
         return arr;
     }
 
+    /// Checks if a move is legal
+    /// @return True if move is legal
     function legal(State storage state, Input memory input)
         internal view
         returns (bool)
     {
-        uint x = 0;
-        uint y = 0;
-        (x, y) = decodeSelector(input.selector);
+        uint x = input.action.x;
+        uint y = input.action.y;
         // player must take turns
         if (state.control != input.pid) {
             return false;
@@ -83,12 +113,14 @@ library TTTLib {
             return false;
         }
         // must place on empty spot
-        if (state.board[input.selector].pid != 0) {
+        if (state.board[encodeSelector(x, y)].pid != 0) {
             return false;
         }
         return true;
     }
 
+    /// Checks if state is terminal
+    /// @return True if in terminal state
     function terminal(State storage state)
         internal view
         returns (bool)
@@ -103,6 +135,8 @@ library TTTLib {
         return false;
     }
 
+    /// Gets the score of a player
+    /// @return A number between 0 and 100 (inclusive)
     function goal(State storage state, uint pid)
         internal view
         returns (uint)
@@ -115,19 +149,43 @@ library TTTLib {
         }
     }
 
-    /* Private functions */
-    function decodeSelector(bytes s)
-        private pure
-        returns (uint, uint)
+    /// Decodes an action from bytes
+    /// @return The decoded action
+    function decodeAction(bytes s)
+        internal pure
+        returns (Action)
     {
-        return PlatformLib.decodePoint2D(s);
+        uint x = 0;
+        uint y = 0;
+        (x, y) = PlatformLib.decodePoint2D(s);
+        return Action({
+            x: x,
+            y: y
+        });
     }
+
+    /* Public functions */
+    // All public functions must be defined with the exact function
+    // signatures
+
+    /// Encodes an action into bytes
+    /// This function is needed for client to encode the action
+    /// @return The encoded action in bytes
+    function encodeAction(uint x, uint y)
+        public pure
+        returns (bytes)
+    {
+        return PlatformLib.encodePoint2D(x, y);
+    }
+
+    /* Private functions */
+    // Can be freely defined
 
     function encodeSelector(uint x, uint y)
         private pure
         returns (bytes)
     {
-        return PlatformLib.encodePoint2D(x, y);
+        return abi.encodePacked(x, y);
     }
 
     // 0 no winner yet, 1 or 2 if any player has won the game
