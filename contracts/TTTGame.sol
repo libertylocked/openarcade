@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
-import "./PlatformLib.sol";
+import "./Util.sol";
 
 
-library TTTLib {
+library TTTGame {
     // Tic Tac Toe game library.
     // No function in the library should mutate the state.
     // Some structs can be freely defined, others must follow certain
@@ -157,7 +157,7 @@ library TTTLib {
     {
         uint x = 0;
         uint y = 0;
-        (x, y) = PlatformLib.decodePoint2D(s);
+        (x, y) = Util.decodePoint2D(s);
         return Action({
             x: x,
             y: y
@@ -175,7 +175,7 @@ library TTTLib {
         public pure
         returns (bytes)
     {
-        return PlatformLib.encodePoint2D(x, y);
+        return Util.encodePoint2D(x, y);
     }
 
     /* Private functions */

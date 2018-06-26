@@ -1,11 +1,11 @@
-const PlatformLib = artifacts.require("./PlatformLib.sol")
-const TTTLib = artifacts.require("./TTTLib.sol")
-const TTTController = artifacts.require("./TTTController.sol")
+const Util = artifacts.require("./Util.sol")
+const Controller = artifacts.require("./Controller.sol")
+const Game = artifacts.require("./TTTGame.sol")
 
 module.exports = (deployer, network, accounts) => {
-  deployer.deploy(PlatformLib)
-  deployer.link(PlatformLib, [TTTLib, TTTController])
-  deployer.deploy(TTTLib)
-  deployer.link(TTTLib, TTTController)
-  deployer.deploy(TTTController, accounts[0], accounts[1])
+  deployer.deploy(Util)
+  deployer.link(Util, [Game, Controller])
+  deployer.deploy(Game)
+  deployer.link(Game, Controller)
+  deployer.deploy(Controller, accounts[0], accounts[1])
 }

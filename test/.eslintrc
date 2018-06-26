@@ -1,0 +1,10 @@
+{
+    "env": {
+      "mocha": true,
+      "node": true
+    },
+    "extends": "standard",
+    "parserOptions": {
+      "ecmaVersion": 2017
+    }
+  }

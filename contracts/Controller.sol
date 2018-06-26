@@ -1,13 +1,14 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import { TTTLib as GameLib } from "./TTTLib.sol";
+// change this line for other games
+import { TTTGame as Game } from "./TTTGame.sol";
 
 
-contract TTTController {
+contract Controller {
     using SafeMath for uint;
 
-    GameLib.State state;
+    Game.State state;
     bool player1Deposited = false;
     bool player2Deposited = false;
 
@@ -31,7 +32,7 @@ contract TTTController {
     }
 
     constructor(address _player1, address _player2) public {
-        state = GameLib.init();
+        state = Game.init();
         // TODO: set control randomly maybe
         state.control = 1;
         player1 = _player1;
@@ -65,21 +66,21 @@ contract TTTController {
             playerID = 2;
         }
 
-        GameLib.Input memory input = GameLib.Input({
+        Game.Input memory input = Game.Input({
             pid: playerID,
-            action: GameLib.decodeAction(action)
+            action: Game.decodeAction(action)
         });
         // check if legal
-        require(GameLib.legal(state, input));
+        require(Game.legal(state, input));
         // game must not be in terminal state
-        require(GameLib.terminal(state) == false);
+        require(Game.terminal(state) == false);
         // update game state
-        GameLib.Update[] memory updates = GameLib.update(state, input);
+        Game.Update[] memory updates = Game.update(state, input);
         for (uint i = 0; i < updates.length; i++) {
             state.board[updates[i].selector] = updates[i].cell;
         }
         // update control
-        state.control = GameLib.next(state);
+        state.control = Game.next(state);
         // emit log
         emit LogPlayerMove(msg.sender, playerID, action);
     }
@@ -89,10 +90,10 @@ contract TTTController {
         public
     {
         // game must be in terminal state
-        require(GameLib.terminal(state));
+        require(Game.terminal(state));
         // check score
-        uint player1Score = GameLib.goal(state, 1);
-        uint player2Score = GameLib.goal(state, 2);
+        uint player1Score = Game.goal(state, 1);
+        uint player2Score = Game.goal(state, 2);
         uint player1Pay = 0;
         uint player2Pay = 0;
         if (player1Score == player2Score) {
@@ -124,7 +125,7 @@ contract TTTController {
         public view
         returns (bool)
     {
-        return GameLib.terminal(state);
+        return Game.terminal(state);
     }
 
     function control()

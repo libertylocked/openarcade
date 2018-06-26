@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 
-library PlatformLib {
+library Util {
     function encodePoint1D(uint x)
         public pure
         returns (bytes)

@@ -67,3 +67,6 @@ typings/
 
 # Solidity-coverage
 coverage.json
+
+# Web3 requests
+.node-xmlhttprequest-sync-*
