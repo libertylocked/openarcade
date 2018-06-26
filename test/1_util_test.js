@@ -1,4 +1,3 @@
-/* global artifacts contract assert */
 import abi from 'ethereumjs-abi'
 import eutil from 'ethereumjs-util'
 

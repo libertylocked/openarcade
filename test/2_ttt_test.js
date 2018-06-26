@@ -1,4 +1,3 @@
-/* global artifacts contract assert */
 import expectThrow from 'openzeppelin-solidity/test/helpers/expectThrow'
 import abi from 'ethereumjs-abi'
 import eutil from 'ethereumjs-util'
