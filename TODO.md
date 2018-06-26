@@ -1,6 +1,6 @@
-- Marks in input and state
-  - Serialize input
 - Automatically find the encodings on client-side
   - Define encoding function in game lib
   - Use game lib ABI
   - Make things easier client side but maybe harder on contract side
+- World state that's not part of the board
+  - e.g. in monopoly, player balance
