@@ -1,15 +1,15 @@
 {
-    "env": {
-      "mocha": true,
-      "node": true
-    },
-    "extends": "standard",
-    "parserOptions": {
-      "ecmaVersion": 2017
-    },
-    "globals": {
-      "assert": false,
-      "artifacts": false,
-      "contract": false
-    }
+  "env": {
+    "mocha": true,
+    "node": true
+  },
+  "extends": "standard",
+  "parserOptions": {
+    "ecmaVersion": 2017
+  },
+  "globals": {
+    "assert": false,
+    "artifacts": false,
+    "contract": false
   }
+}
