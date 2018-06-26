@@ -1,5 +1,5 @@
-- Marks in input and state
-  - Serialize input
+- Separate free-to-edit and defined structs/functions
+  - Using a `connector` library
 - Automatically find the encodings on client-side
   - Define encoding function in game lib
   - Use game lib ABI
