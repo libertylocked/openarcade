@@ -41,7 +41,7 @@ contract Controller {
     function deposit()
         playerOnly
         payable
-        public
+        external
     {
         require(msg.value == BET_AMOUNT);
         if (msg.sender == player1) {

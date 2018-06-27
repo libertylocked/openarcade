@@ -4,7 +4,8 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
 // Random number generator using commit-reveal.
-// This contract should be deployed by a controller
+// This contract should be deployed by a controller. The controller
+//  who is the owner serves as a relay to call commit/reveal
 contract RandGen is Ownable {
     mapping(address => bool) public players;
     uint public playerCount;
@@ -20,7 +21,7 @@ contract RandGen is Ownable {
     enum State {
         Commit,
         Reveal,
-        Done
+        Ready
     }
 
     event LogCommitted(address player, bytes32 commit);
@@ -28,18 +29,18 @@ contract RandGen is Ownable {
     event LogStateChanged(State state);
     event LogRandomGenerated(uint index, uint number);
 
-    modifier onlyPlayer() {
-        require(players[msg.sender]);
+    modifier onlyPlayer(address sender) {
+        require(players[sender]);
         _;
     }
 
-    modifier onlyNotCommitted() {
-        require(commits[msg.sender] == 0);
+    modifier onlyNotCommitted(address sender) {
+        require(commits[sender] == 0);
         _;
     }
 
-    modifier onlyNotRevealed() {
-        require(reveals[msg.sender] == 0);
+    modifier onlyNotRevealed(address sender) {
+        require(reveals[sender] == 0);
         _;
     }
 
@@ -56,56 +57,41 @@ contract RandGen is Ownable {
         state = State.Commit;
     }
 
-    function commit(bytes32 _commit)
-        onlyPlayer
-        onlyNotCommitted
+    function commit(address sender, bytes32 _hash)
         onlyDuring(State.Commit)
-        public
+        external
         returns (bool)
     {
-        // the commit can't be zero or hashed zero
-        require(_commit != 0);
-        require(_commit != keccak256(abi.encodePacked(uint(0))));
-        commits[msg.sender] = _commit;
-        commitCount++;
-        emit LogCommitted(msg.sender, _commit);
-        if (commitCount == playerCount) {
-            state = State.Reveal;
-            emit LogStateChanged(State.Reveal);
+        if (msg.sender == owner) {
+            // if message comes from a relayer, we trust the sender arg
+            return _commit(sender, _hash);
+        } else if (sender == address(0)) {
+            // if sender arg is zero, default to msg.sender
+            return _commit(msg.sender, _hash);
         }
-        return true;
+        // otherwise the sender must be msg.sender
+        require(sender == msg.sender);
+        return _commit(msg.sender, _hash);
     }
 
-    function reveal(uint _num)
-        onlyPlayer
-        onlyNotRevealed
+    function reveal(address sender, uint _num)
         onlyDuring(State.Reveal)
-        public
+        external
         returns (bool)
     {
-        // check commit
-        require(keccak256(abi.encodePacked(_num)) == commits[msg.sender]);
-        reveals[msg.sender] = _num;
-        revealCount++;
-        emit LogRevealed(msg.sender, _num);
-        seed ^= _num;
-        if (revealCount == playerCount) {
-            state = State.Done;
-            emit LogStateChanged(State.Done);
+        if (msg.sender == owner) {
+            return _reveal(sender, _num);
+        } else if (sender == address(0)) {
+            return _reveal(msg.sender, _num);
         }
-    }
-
-    function current()
-        onlyDuring(State.Done)
-        public view
-        returns (uint)
-    {
-        return seed;
+        require(sender == msg.sender);
+        return _reveal(msg.sender, _num);
     }
 
     function next()
-        onlyDuring(State.Done)
-        public
+        onlyOwner
+        onlyDuring(State.Ready)
+        external
         returns (uint)
     {
         seed = uint(keccak256(abi.encodePacked(seed)));
@@ -113,4 +99,54 @@ contract RandGen is Ownable {
         emit LogRandomGenerated(index, seed);
         return seed;
     }
+
+    function current()
+        onlyDuring(State.Ready)
+        external view
+        returns (uint)
+    {
+        return seed;
+    }
+
+    /* Private functions */
+
+    function _commit(address sender, bytes32 _hash)
+        onlyPlayer(sender)
+        onlyNotCommitted(sender)
+        onlyDuring(State.Commit)
+        private
+        returns (bool)
+    {
+        // the commit can't be zero or hashed zero
+        require(_hash != 0);
+        require(_hash != keccak256(abi.encodePacked(uint(0))));
+        commits[sender] = _hash;
+        commitCount++;
+        emit LogCommitted(sender, _hash);
+        if (commitCount == playerCount) {
+            state = State.Reveal;
+            emit LogStateChanged(State.Reveal);
+        }
+        return true;
+    }
+
+    function _reveal(address sender, uint _num)
+        onlyPlayer(sender)
+        onlyNotRevealed(sender)
+        onlyDuring(State.Reveal)
+        private
+        returns (bool)
+    {
+        // check commit
+        require(keccak256(abi.encodePacked(_num)) == commits[sender]);
+        reveals[sender] = _num;
+        revealCount++;
+        emit LogRevealed(sender, _num);
+        seed ^= _num;
+        if (revealCount == playerCount) {
+            state = State.Ready;
+            emit LogStateChanged(State.Ready);
+        }
+    }
+
 }
