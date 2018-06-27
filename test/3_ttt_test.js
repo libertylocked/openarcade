@@ -8,7 +8,7 @@ const Controller = artifacts.require('./Controller.sol')
 // const newActionEncoder = (lib) => (...args) => lib.encodeAction.call(...args)
 const encodeActionABI = (x, y) => eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [x, y]))
 
-contract('TTT', (accounts) => {
+contract('TTTGame + Controller + Connect', (accounts) => {
   let controller
   let encodeAction
   const player1 = accounts[0]
@@ -21,7 +21,6 @@ contract('TTT', (accounts) => {
   beforeEach('deploy a new Controller', async () => {
     controller = await Controller.new(player1, player2)
   })
-
   describe('constructor', () => {
     it('should set player addresses and control correctly', async () => {
       const instance = await Controller.new(player1, player2)

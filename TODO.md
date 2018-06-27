@@ -4,3 +4,6 @@
   - Make things easier client side but maybe harder on contract side
 - World state that's not part of the board
   - e.g. in monopoly, player balance
+- Commit-reveal RNG
+  - Add lock time
+  - Add timeout

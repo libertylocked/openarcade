@@ -8,6 +8,7 @@
     "ecmaVersion": 2017
   },
   "globals": {
+    "web3": false,
     "assert": false,
     "artifacts": false,
     "contract": false
