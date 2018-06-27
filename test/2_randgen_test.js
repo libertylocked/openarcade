@@ -5,7 +5,7 @@ const RandGen = artifacts.require('./RandGen.sol')
 
 const createCommit = (num) => eutil.bufferToHex(eutil.keccak256(eutil.setLengthLeft(num, 32)))
 
-const [owner, alice, bob, carol, david] = web3.eth.accounts
+const [, alice, bob, carol, david] = web3.eth.accounts
 const aliceNum = 42
 const aliceCommit = createCommit(aliceNum)
 const bobNum = 1337

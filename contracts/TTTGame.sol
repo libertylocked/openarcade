@@ -165,9 +165,9 @@ library TTTGame {
 
     function encodeSelector(uint x, uint y)
         private pure
-        returns (bytes)
+        returns (bytes32)
     {
-        return abi.encodePacked(x, y);
+        return keccak256(abi.encodePacked(x, y));
     }
 
     // 0 no winner yet, 1 or 2 if any player has won the game
@@ -182,13 +182,13 @@ library TTTGame {
             uint rowWinner = state.board[encodeSelector(0, i)].pid;
             for (uint j = 1; j < 3; j++) {
                 if (colWinner != 0) {
-                    bytes memory colSelect = encodeSelector(i, j);
+                    bytes32 colSelect = encodeSelector(i, j);
                     if (state.board[colSelect].pid != colWinner) {
                         colWinner = 0;
                     }
                 }
                 if (rowWinner != 0) {
-                    bytes memory rowSelect = encodeSelector(j, i);
+                    bytes32 rowSelect = encodeSelector(j, i);
                     if (state.board[rowSelect].pid != rowWinner) {
                         rowWinner = 0;
                     }
@@ -205,13 +205,13 @@ library TTTGame {
         uint rtlWinner = state.board[encodeSelector(2, 0)].pid;
         for (i = 1; i < 3; i++) {
             if (ltrWinner != 0) {
-                bytes memory ltrSelect = encodeSelector(i, i);
+                bytes32 ltrSelect = encodeSelector(i, i);
                 if (state.board[ltrSelect].pid != ltrWinner) {
                     ltrWinner = 0;
                 }
             }
             if (rtlWinner != 0) {
-                bytes memory rtlSelect = encodeSelector(2-i, i);
+                bytes32 rtlSelect = encodeSelector(2-i, i);
                 if (state.board[rtlSelect].pid != rtlWinner) {
                     rtlWinner = 0;
                 }

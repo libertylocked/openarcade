@@ -8,12 +8,12 @@ import { TTTGame as Game } from "./TTTGame.sol";
 // GDL inspired interface
 library Connect {
     struct State {
-        mapping(bytes => Game.Cell) board;
+        mapping(bytes32 => Game.Cell) board;
         uint control;
     }
 
     struct Update {
-        bytes selector; // which cell to update
+        bytes32 selector; // which cell to update
         Game.Cell cell; // what to update it to
     }
 
