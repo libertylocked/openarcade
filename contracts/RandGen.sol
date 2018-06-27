@@ -96,6 +96,7 @@ contract RandGen is Ownable {
     }
 
     function current()
+        onlyDuring(State.Done)
         public view
         returns (uint)
     {

@@ -97,6 +97,11 @@ contract('RandGen', () => {
       await instance.reveal(bobNum, { from: bob })
       await instance.reveal(carolNum, { from: carol })
     })
+    it('should revert if state is not set to done', async () => {
+      const instance = await RandGen.new([alice, bob, carol])
+      await assertRevert(instance.current())
+      await assertRevert(instance.next())
+    })
     it('should have the initial seed set to the xor of the numbers revealed', async () => {
       const xord = aliceNum ^ bobNum ^ carolNum
       assert.equal(await instance.index(), 0)
