@@ -5,7 +5,7 @@ const RandGen = artifacts.require('./RandGen.sol')
 
 const createCommit = (num) => eutil.bufferToHex(eutil.keccak256(eutil.setLengthLeft(num, 32)))
 
-const [alice, bob, carol, david] = web3.eth.accounts
+const [owner, alice, bob, carol, david] = web3.eth.accounts
 const aliceNum = 42
 const aliceCommit = createCommit(aliceNum)
 const bobNum = 1337
@@ -56,6 +56,10 @@ contract('RandGen', () => {
       assert.equal(tx.logs[1].args.state, 1)
       assert.equal(await instance.state(), 1)
     })
+    it('should allow non owner to directly commit', async () => {
+      await instance.commit(0, aliceCommit, { from: alice })
+      assert.equal(await instance.commits(alice), aliceCommit)
+    })
   })
   describe('reveal', () => {
     beforeEach('commit all the numbers from alice bob carol', async () => {
@@ -86,6 +90,10 @@ contract('RandGen', () => {
       assert.equal(tx.logs[1].event, 'LogStateChanged')
       assert.equal(tx.logs[1].args.state, 2)
       assert.equal(await instance.state(), 2)
+    })
+    it('should allow non owner to directly reveal', async () => {
+      await instance.reveal(0, aliceNum, { from: alice })
+      assert.equal(await instance.reveals(alice), aliceNum)
     })
   })
   describe('next', () => {

@@ -65,12 +65,8 @@ contract RandGen is Ownable {
         if (msg.sender == owner) {
             // if message comes from a relayer, we trust the sender arg
             return _commit(sender, _hash);
-        } else if (sender == address(0)) {
-            // if sender arg is zero, default to msg.sender
-            return _commit(msg.sender, _hash);
         }
-        // otherwise the sender must be msg.sender
-        require(sender == msg.sender);
+        // otherwise ignore sender argument
         return _commit(msg.sender, _hash);
     }
 
@@ -81,10 +77,7 @@ contract RandGen is Ownable {
     {
         if (msg.sender == owner) {
             return _reveal(sender, _num);
-        } else if (sender == address(0)) {
-            return _reveal(msg.sender, _num);
         }
-        require(sender == msg.sender);
         return _reveal(msg.sender, _num);
     }
 
