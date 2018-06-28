@@ -19,13 +19,13 @@ contract('TTTGame + Controller + Connect', (accounts) => {
     encodeAction = encodeActionABI
   })
   beforeEach('deploy a new Controller', async () => {
-    controller = await Controller.new(player1, player2)
+    controller = await Controller.new([player1, player2])
   })
   describe('constructor', () => {
     it('should set player addresses and control correctly', async () => {
-      const instance = await Controller.new(player1, player2)
-      assert.equal(await instance.player1(), player1)
-      assert.equal(await instance.player2(), player2)
+      const instance = await Controller.new([player1, player2])
+      assert.equal(await instance.players(player1), 1)
+      assert.equal(await instance.players(player2), 2)
       assert.equal(await instance.control(), 1)
     })
   })

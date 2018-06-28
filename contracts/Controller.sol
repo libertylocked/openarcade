@@ -2,69 +2,77 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Connect.sol";
+import "./RandGen.sol";
 
 
 contract Controller {
     using SafeMath for uint;
 
     Connect.State state;
-    bool player1Deposited = false;
-    bool player2Deposited = false;
+    RandGen public rand;
+    mapping(address => bool) public deposited;
+    uint public depositedCount;
+    mapping(address => uint) public players;
+    address[] public playersArray;
+    LifeCycle public status;
 
-    address public player1;
-    address public player2;
     uint constant public BET_AMOUNT = 1 ether;
+
+    enum LifeCycle {
+        Depositing,
+        Playing
+    }
 
     event LogPlayerMove(
         address indexed player, uint pid, bytes action
     );
     event LogPayout(address player, uint amount);
 
-    modifier gameStarted() {
-        require(player1Deposited && player2Deposited);
+    modifier onlyDuring(LifeCycle _status) {
+        require(status == _status);
         _;
     }
 
     modifier playerOnly() {
-        require(msg.sender == player1 || msg.sender == player2);
+        require(players[msg.sender] != 0);
         _;
     }
 
-    constructor(address _player1, address _player2) public {
-        state = Connect.init();
-        // TODO: set control randomly maybe
+    constructor(address[] _players) public {
+        // TODO: set initial control randomly maybe
+        state = Connect.init(_players.length);
         state.control = 1;
-        player1 = _player1;
-        player2 = _player2;
+        for (uint i = 0; i < _players.length; i++) {
+            players[_players[i]] = i + 1;
+        }
+        playersArray = _players;
+        // create RNG contract
+        rand = new RandGen(_players);
+        // start in depositing stage
+        status = LifeCycle.Depositing;
     }
 
     function deposit()
         playerOnly
+        onlyDuring(LifeCycle.Depositing)
         payable
         external
     {
         require(msg.value == BET_AMOUNT);
-        if (msg.sender == player1) {
-            require(!player1Deposited);
-            player1Deposited = true;
-        } else {
-            require(!player2Deposited);
-            player2Deposited = true;
+        require(!deposited[msg.sender]);
+        deposited[msg.sender] = true;
+        depositedCount++;
+        if (depositedCount == playersArray.length) {
+            status = LifeCycle.Playing;
         }
     }
 
     function play(bytes action)
         playerOnly
-        gameStarted
+        onlyDuring(LifeCycle.Playing)
         public
     {
-        uint playerID;
-        if (msg.sender == player1) {
-            playerID = 1;
-        } else {
-            playerID = 2;
-        }
-
+        uint playerID = players[msg.sender];
         Connect.Input memory input = Connect.Input({
             pid: playerID,
             action: Connect.decodeAction(action)
@@ -85,12 +93,12 @@ contract Controller {
     }
 
     function payout()
-        gameStarted
+        onlyDuring(LifeCycle.Playing)
         public
     {
+        // TODO change this to support more than 2 players
         // game must be in terminal state
         require(Connect.terminal(state));
-        // check score
         uint player1Score = Connect.goal(state, 1);
         uint player2Score = Connect.goal(state, 2);
         uint player1Pay = 0;
@@ -109,12 +117,12 @@ contract Controller {
 
         // transfer payout
         if (player1Pay > 0) {
-            player1.transfer(player1Pay);
-            emit LogPayout(player1, player1Pay);
+            playersArray[0].transfer(player1Pay);
+            emit LogPayout(playersArray[0], player1Pay);
         }
         if (player2Pay > 0) {
-            player2.transfer(player2Pay);
-            emit LogPayout(player2, player2Pay);
+            playersArray[1].transfer(player2Pay);
+            emit LogPayout(playersArray[1], player2Pay);
         }
         assert(address(this).balance == 0);
         selfdestruct(0);

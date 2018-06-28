@@ -22,11 +22,11 @@ library Connect {
         Game.Action action;
     }
 
-    function init()
+    function init(uint playerCount)
         internal pure
         returns (State)
     {
-        return Game.init();
+        return Game.init(playerCount);
     }
 
     function next(State storage state)

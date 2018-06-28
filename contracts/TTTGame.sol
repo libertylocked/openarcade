@@ -35,7 +35,7 @@ library TTTGame {
 
     /// Inits game state
     /// @return the initial game state
-    function init()
+    function init(uint playerCount)
         internal pure
         returns (Connect.State)
     {

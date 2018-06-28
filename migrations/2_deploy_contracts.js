@@ -7,5 +7,4 @@ module.exports = (deployer, network, accounts) => {
   deployer.link(Util, [Game, Controller])
   deployer.deploy(Game)
   deployer.link(Game, Controller)
-  deployer.deploy(Controller, accounts[0], accounts[1])
 }
