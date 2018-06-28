@@ -75,6 +75,12 @@ contract('RandGen', () => {
       assert.equal(tx.logs[0].args.number, aliceNum)
       assert.equal(await instance.reveals(alice), aliceNum)
     })
+    it('should not allow reveal before all committed', async () => {
+      let rng = await RandGen.new([alice, bob])
+      // only alice commit, bob does not
+      await rng.commit(alice, aliceCommit)
+      await assertRevert(rng.reveal(alice, aliceNum))
+    })
     it('should not allow multiple reveals from same player', async () => {
       await instance.reveal(alice, aliceNum)
       await assertRevert(instance.reveal(alice, aliceNum))
