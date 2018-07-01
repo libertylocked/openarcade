@@ -36,12 +36,12 @@
     "eslint-plugin-standard": "^3.1.0",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^5.2.0",
-    "ganache-cli": "^6.1.0",
-    "solidity-coverage": "^0.5.2",
+    "ganache-cli": "^6.1.4",
+    "solidity-coverage": "^0.5.4",
     "solium": "^1.1.7",
-    "truffle": "^4.1.9"
+    "truffle": "4.1.13"
   },
   "dependencies": {
-    "openzeppelin-solidity": "^1.10.0"
+    "openzeppelin-solidity": "1.10.0"
   }
 }
