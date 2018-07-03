@@ -6,7 +6,7 @@
   "scripts": {
     "start": "ganache-cli -p 7545 -i 5777 -e 1000",
     "lint:sol": "solium -d .",
-    "lint:js": "eslint test",
+    "lint:js": "eslint migrations test",
     "lint": "npm run lint:sol && npm run lint:js",
     "compile": "truffle compile",
     "migrate": "truffle migrate",
