@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "./RandGen.sol";
 // change this line for other games
 import { TTTGame as Game } from "./TTTGame.sol";
 
@@ -22,11 +23,15 @@ library Connect {
         Game.Action action;
     }
 
-    function init(uint playerCount)
-        internal pure
+    struct Tools {
+        RandGen random;
+    }
+
+    function init(Tools tools, uint playerCount)
+        internal
         returns (State)
     {
-        return Game.init(playerCount);
+        return Game.init(tools, playerCount);
     }
 
     function next(State storage state)

@@ -58,28 +58,40 @@ contract RandGen is Ownable {
     }
 
     function commit(address sender, bytes32 _hash)
+        onlyOwner
         onlyDuring(State.Commit)
         external
         returns (bool)
     {
-        if (msg.sender == owner) {
-            // if message comes from a relayer, we trust the sender arg
-            return _commit(sender, _hash);
-        }
-        // otherwise ignore sender argument
-        return _commit(msg.sender, _hash);
+        return _commit(sender, _hash);
     }
 
+    // function commitFromPlayer(bytes32 _hash)
+    //     onlyPlayer(msg.sender)
+    //     onlyDuring(State.Commit)
+    //     external
+    //     returns (bool)
+    // {
+    //     return _commit(msg.sender, _hash);
+    // }
+
     function reveal(address sender, uint _num)
+        onlyOwner
         onlyDuring(State.Reveal)
         external
         returns (bool)
     {
-        if (msg.sender == owner) {
-            return _reveal(sender, _num);
-        }
-        return _reveal(msg.sender, _num);
+        return _reveal(sender, _num);
     }
+
+    // function revealFromPlayer(uint _num)
+    //     onlyPlayer(msg.sender)
+    //     onlyDuring(State.Reveal)
+    //     external
+    //     returns (bool)
+    // {
+    //     return _reveal(msg.sender, _num);
+    // }
 
     function next()
         onlyOwner
@@ -140,6 +152,7 @@ contract RandGen is Ownable {
             state = State.Ready;
             emit LogStateChanged(State.Ready);
         }
+        return true;
     }
 
 }

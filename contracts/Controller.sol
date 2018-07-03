@@ -9,18 +9,19 @@ contract Controller {
     using SafeMath for uint;
 
     Connect.State state;
-    RandGen public rand;
+    Connect.Tools tools;
     mapping(address => bool) public deposited;
     uint public depositedCount;
     mapping(address => uint) public players;
     address[] public playersArray;
-    LifeCycle public status;
+    LifeCycle public lifecycle;
 
     uint constant public BET_AMOUNT = 1 ether;
 
     enum LifeCycle {
-        Depositing,
-        Playing
+        Deposit,
+        SetupRNG,
+        Play
     }
 
     event LogPlayerMove(
@@ -29,7 +30,7 @@ contract Controller {
     event LogPayout(address player, uint amount);
 
     modifier onlyDuring(LifeCycle _status) {
-        require(status == _status);
+        require(lifecycle == _status);
         _;
     }
 
@@ -39,43 +40,77 @@ contract Controller {
     }
 
     constructor(address[] _players) public {
-        // TODO: set initial control randomly maybe
-        state = Connect.init(_players.length);
-        state.control = 1;
         for (uint i = 0; i < _players.length; i++) {
             players[_players[i]] = i + 1;
         }
         playersArray = _players;
         // create RNG contract
-        rand = new RandGen(_players);
+        tools = Connect.Tools({
+            random: new RandGen(_players)
+        });
         // start in depositing stage
-        status = LifeCycle.Depositing;
+        lifecycle = LifeCycle.Deposit;
     }
 
     function deposit()
         playerOnly
-        onlyDuring(LifeCycle.Depositing)
+        onlyDuring(LifeCycle.Deposit)
         payable
         external
     {
+        // must send exact bet
         require(msg.value == BET_AMOUNT);
         require(!deposited[msg.sender]);
         deposited[msg.sender] = true;
         depositedCount++;
+        // there is the assumption that Controller and RandGen will go to reveal stage at the same time
         if (depositedCount == playersArray.length) {
-            status = LifeCycle.Playing;
+            lifecycle = LifeCycle.SetupRNG;
         }
     }
 
-    function play(bytes action)
+    function commit(bytes32 _hash)
         playerOnly
-        onlyDuring(LifeCycle.Playing)
-        public
+        onlyDuring(LifeCycle.SetupRNG)
+        external
+        returns (bool)
+    {
+        require(tools.random.commit(msg.sender, _hash));
+        return true;
+    }
+
+    function reveal(uint _num)
+        playerOnly
+        onlyDuring(LifeCycle.SetupRNG)
+        external
+        returns (bool)
+    {
+        require(tools.random.reveal(msg.sender, _num));
+        return true;
+    }
+
+    function start()
+        playerOnly
+        onlyDuring(LifeCycle.SetupRNG)
+        external
+        returns (bool)
+    {
+        // RNG must be ready (committed and revealed)
+        require(tools.random.state() == RandGen.State.Ready);
+        // init state from game library
+        state = Connect.init(tools, playersArray.length);
+        lifecycle = LifeCycle.Play;
+    }
+
+    function play(bytes _action)
+        playerOnly
+        onlyDuring(LifeCycle.Play)
+        external
     {
         uint playerID = players[msg.sender];
         Connect.Input memory input = Connect.Input({
             pid: playerID,
-            action: Connect.decodeAction(action)
+            action: Connect.decodeAction(_action)
         });
         // check if legal
         require(Connect.legal(state, input));
@@ -89,11 +124,11 @@ contract Controller {
         // update control
         state.control = Connect.next(state);
         // emit log
-        emit LogPlayerMove(msg.sender, playerID, action);
+        emit LogPlayerMove(msg.sender, playerID, _action);
     }
 
     function payout()
-        onlyDuring(LifeCycle.Playing)
+        onlyDuring(LifeCycle.Play)
         public
     {
         // TODO change this to support more than 2 players
@@ -140,5 +175,12 @@ contract Controller {
         returns (uint)
     {
         return state.control;
+    }
+
+    function random()
+        public view
+        returns (address)
+    {
+        return address(tools.random);
     }
 }

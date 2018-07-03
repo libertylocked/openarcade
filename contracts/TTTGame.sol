@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Connect.sol";
 import "./Util.sol";
 
@@ -35,12 +36,14 @@ library TTTGame {
 
     /// Inits game state
     /// @return the initial game state
-    function init(uint playerCount)
-        internal pure
+    function init(Connect.Tools tools, uint playerCount)
+        internal
         returns (Connect.State)
     {
+        // start the game with control setting to random
+        // since player ID starts at 0, for a 2 player game it would be 1 or 2
         return Connect.State({
-            control: 0
+            control: 1 + tools.random.next() % playerCount
         });
     }
 
