@@ -12,8 +12,7 @@ const encodeActionABI = (x, y) => eutil.bufferToHex(abi.rawEncode(['uint256', 'u
 contract('TTTGame + Controller + Connect', (accounts) => {
   let controller
   let encodeAction
-  const player1 = accounts[0]
-  const player2 = accounts[1]
+  const [ , player1, player2 ] = accounts
   before('get the encode action function', async () => {
     // const gameLib = await Game.deployed()
     // encodeAction = newActionEncoder(gameLib)
@@ -46,7 +45,7 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       await controller.commit(createCommit(9001), { from: player2 })
       await controller.reveal(1337, { from: player1 })
       await controller.reveal(9001, { from: player2 })
-      await controller.start({ from: player1 })
+      await controller.start()
       // the 1st number: sha3(1337 xor 9001) is
       // 0x4e66df4bdd547b751802471b8578ff25842645c69676a953cff51ab97f0006e6
       // player 1 should go first
@@ -57,7 +56,7 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       await controller.commit(createCommit(9002), { from: player2 })
       await controller.reveal(1337, { from: player1 })
       await controller.reveal(9002, { from: player2 })
-      await controller.start({ from: player1 })
+      await controller.start()
       // the 1st number: sha3(1337 xor 9002) is
       // 0xd93d05651913279338de2ec0ab00dc6a13dc8c75c48a9de906cdc7712b825875
       // player 2 should go first
@@ -79,7 +78,7 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       await controller.commit(createCommit(9001), { from: player2 })
       await controller.reveal(1337, { from: player1 })
       await controller.reveal(9001, { from: player2 })
-      await controller.start({ from: player1 })
+      await controller.start()
     })
     it('should only allow player who has control to play', async () => {
       const tx = await controller.play(encodeAction(0, 0), { from: player1 })
@@ -95,7 +94,7 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       await expectThrow(controller.play(encodeAction(0, 1), { from: player1 }))
     })
   })
-  describe('payout', () => {
+  describe('withdraw', () => {
     beforeEach('setup game', async () => {
       const bet = await controller.BET_AMOUNT()
       await controller.deposit({
@@ -110,22 +109,24 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       await controller.commit(createCommit(9001), { from: player2 })
       await controller.reveal(1337, { from: player1 })
       await controller.reveal(9001, { from: player2 })
-      await controller.start({ from: player1 })
+      await controller.start()
     })
-    it('should pay the winner when player 1 wins', async () => {
+    it('should pay player 1 when player 1 wins', async () => {
       const bet = await controller.BET_AMOUNT()
       await controller.play(encodeAction(0, 0), { from: player1 })
       await controller.play(encodeAction(0, 1), { from: player2 })
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(0, 2), { from: player2 })
       await controller.play(encodeAction(2, 2), { from: player1 })
-      const tx = await controller.payout({ from: player1 })
-      assert.equal(tx.logs[0].event, 'LogPayout')
+      await controller.end()
+      const tx = await controller.withdraw({ from: player1 })
+      assert.equal(tx.logs[0].event, 'LogWithdraw')
       assert.equal(tx.logs[0].args.player, player1)
       assert.equal(tx.logs[0].args.amount.toString(), bet.mul(2).toString())
     })
     it('should split the payout if match is a draw', async () => {
       const bet = await controller.BET_AMOUNT()
+      // fill up the board without anyone winning
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
       await controller.play(encodeAction(0, 0), { from: player1 })
@@ -135,19 +136,22 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       await controller.play(encodeAction(1, 2), { from: player1 })
       await controller.play(encodeAction(0, 1), { from: player2 })
       await controller.play(encodeAction(2, 1), { from: player1 })
-      const tx = await controller.payout({ from: player1 })
-      assert.equal(tx.logs[0].event, 'LogPayout')
+      await controller.end()
+      const tx = await controller.withdraw({ from: player1 })
+      assert.equal(tx.logs[0].event, 'LogWithdraw')
       assert.equal(tx.logs[0].args.player, player1)
       assert.equal(tx.logs[0].args.amount.toString(), bet.toString())
-      assert.equal(tx.logs[1].event, 'LogPayout')
-      assert.equal(tx.logs[1].args.player, player2)
-      assert.equal(tx.logs[1].args.amount.toString(), bet.toString())
+      const tx2 = await controller.withdraw({ from: player2 })
+      assert.equal(tx2.logs[0].event, 'LogWithdraw')
+      assert.equal(tx2.logs[0].args.player, player2)
+      assert.equal(tx2.logs[0].args.amount.toString(), bet.toString())
     })
-    it('should not allow payout before terminal state', async () => {
+    it('should not allow withdraw before terminal state', async () => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
       await controller.play(encodeAction(0, 0), { from: player1 })
-      expectThrow(controller.payout({ from: player1 }))
+      expectThrow(controller.end())
+      expectThrow(controller.withdraw({ from: player1 }))
     })
   })
 })

@@ -1,11 +1,13 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
 import "./Connect.sol";
 import "./RandGen.sol";
 
 
-contract Controller {
+contract Controller is Ownable, Destructible {
     using SafeMath for uint;
 
     Game.State state;
@@ -15,6 +17,8 @@ contract Controller {
     uint public depositedCount;
     mapping(address => uint) public players; // value is playerID
     address[] public playersArray;
+    mapping(address => uint) public points;
+    uint totalPoints;
     LifeCycle public lifecycle;
 
     uint constant public BET_AMOUNT = 1 ether;
@@ -22,13 +26,14 @@ contract Controller {
     enum LifeCycle {
         Deposit,
         SetupRNG,
-        Play
+        Play,
+        Withdraw
     }
 
     event LogPlayerMove(
         address indexed player, uint pid, bytes action
     );
-    event LogPayout(address player, uint amount);
+    event LogWithdraw(address player, uint amount);
 
     modifier onlyDuring(LifeCycle _status) {
         require(lifecycle == _status);
@@ -129,41 +134,35 @@ contract Controller {
         emit LogPlayerMove(msg.sender, playerID, _action);
     }
 
-    function payout()
+    function end()
         onlyDuring(LifeCycle.Play)
+        external
+    {
+        // game ends in terminal state
+        require(Connect.terminal(state));
+        // calculate payout for each player
+        uint playerPoints;
+        for (uint i = 0; i < playersArray.length; i++) {
+            playerPoints = Connect.goal(state, players[playersArray[i]]);
+            points[playersArray[i]] = playerPoints;
+            totalPoints = totalPoints.add(playerPoints);
+        }
+        // advance state
+        lifecycle = LifeCycle.Withdraw;
+    }
+
+    function withdraw()
+        playerOnly
+        onlyDuring(LifeCycle.Withdraw)
         public
     {
-        // TODO change this to support more than 2 players
-        // TODO use withdraw pattern
-        // game must be in terminal state
-        require(Connect.terminal(state));
-        uint player1Score = Connect.goal(state, 1);
-        uint player2Score = Connect.goal(state, 2);
-        uint player1Pay = 0;
-        uint player2Pay = 0;
-        if (player1Score == player2Score) {
-            // split 50/50
-            player1Pay = address(this).balance / 2;
-            player2Pay = address(this).balance.sub(player1Pay);
-        } else if (player1Score > player2Score) {
-            // pay player 1
-            player1Pay = address(this).balance;
-        } else {
-            // pay player 2
-            player2Pay = address(this).balance;
-        }
-
-        // transfer payout
-        if (player1Pay > 0) {
-            playersArray[0].transfer(player1Pay);
-            emit LogPayout(playersArray[0], player1Pay);
-        }
-        if (player2Pay > 0) {
-            playersArray[1].transfer(player2Pay);
-            emit LogPayout(playersArray[1], player2Pay);
-        }
-        assert(address(this).balance == 0);
-        selfdestruct(0);
+        require(points[msg.sender] > 0);
+        uint sendAmount = BET_AMOUNT.mul(playersArray.length)
+            .div(totalPoints).mul(points[msg.sender]);
+        // clear player points before transfer
+        points[msg.sender] = 0;
+        msg.sender.transfer(sendAmount);
+        emit LogWithdraw(msg.sender, sendAmount);
     }
 
     function terminal()

@@ -117,6 +117,10 @@ library TTTGame {
         internal view
         returns (uint)
     {
+        if (boardFull(state)) {
+            // if board is full, both players get 50 points
+            return 50;
+        }
         uint winnerID = checkWinner(state);
         if (winnerID == pid) {
             return 100;

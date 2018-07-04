@@ -1,9 +1,7 @@
-- Automatically find the encodings on client-side
-  - Define encoding function in game lib
-  - Use game lib ABI
-  - Make things easier client side but maybe harder on contract side
-- World state that's not part of the board
-  - e.g. in monopoly, player balance
 - Commit-reveal RNG
   - Add lock time
   - Add timeout
+- Controller costs too much gas to deploy
+  - Move some code to library
+  - Make RNG optional
+  - Move some RNG code to library
