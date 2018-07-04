@@ -8,11 +8,12 @@ import "./RandGen.sol";
 contract Controller {
     using SafeMath for uint;
 
-    Connect.State state;
+    Game.State state;
+    Connect.Info info;
     Connect.Tools tools;
     mapping(address => bool) public deposited;
     uint public depositedCount;
-    mapping(address => uint) public players;
+    mapping(address => uint) public players; // value is playerID
     address[] public playersArray;
     LifeCycle public lifecycle;
 
@@ -41,9 +42,13 @@ contract Controller {
 
     constructor(address[] _players) public {
         for (uint i = 0; i < _players.length; i++) {
-            players[_players[i]] = i + 1;
+            players[_players[i]] = 1 + i;
         }
         playersArray = _players;
+        info = Connect.Info({
+            playerCount: _players.length,
+            control: 0
+        });
         // create RNG contract
         tools = Connect.Tools({
             random: new RandGen(_players)
@@ -90,7 +95,6 @@ contract Controller {
     }
 
     function start()
-        playerOnly
         onlyDuring(LifeCycle.SetupRNG)
         external
         returns (bool)
@@ -98,7 +102,8 @@ contract Controller {
         // RNG must be ready (committed and revealed)
         require(tools.random.state() == RandGen.State.Ready);
         // init state from game library
-        state = Connect.init(tools, playersArray.length);
+        // set state and game info
+        (state, info.control) = Connect.init(tools, playersArray.length);
         lifecycle = LifeCycle.Play;
     }
 
@@ -113,16 +118,13 @@ contract Controller {
             action: Connect.decodeAction(_action)
         });
         // check if legal
-        require(Connect.legal(state, input));
+        require(Connect.legal(state, info, input));
         // game must not be in terminal state
         require(Connect.terminal(state) == false);
         // update game state
-        Connect.Update[] memory updates = Connect.update(state, input);
-        for (uint i = 0; i < updates.length; i++) {
-            state.board[updates[i].selector] = updates[i].cell;
-        }
+        Connect.update(state, input);
         // update control
-        state.control = Connect.next(state);
+        info.control = Connect.next(state, info);
         // emit log
         emit LogPlayerMove(msg.sender, playerID, _action);
     }
@@ -132,6 +134,7 @@ contract Controller {
         public
     {
         // TODO change this to support more than 2 players
+        // TODO use withdraw pattern
         // game must be in terminal state
         require(Connect.terminal(state));
         uint player1Score = Connect.goal(state, 1);
@@ -174,7 +177,7 @@ contract Controller {
         public view
         returns (uint)
     {
-        return state.control;
+        return info.control;
     }
 
     function random()

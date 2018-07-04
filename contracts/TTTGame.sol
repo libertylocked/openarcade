@@ -12,8 +12,16 @@ import "./Util.sol";
 // Structs can be freely modified, as long as their names do not change.
 // Note: pid (player ID) is always non zero.
 library TTTGame {
-    // A player Action
-    // Action can be freely defined in game library
+    // State is the state of the game
+    // This struct must be defined, but the layout is up to the game developer
+    struct State {
+        // In TTT, we define the state as simply a mapping which is the board.
+        // It's a flattened 2D array
+        mapping(bytes32=>Cell) board;
+    }
+
+    // Action is the action of a player
+    // This struct must be defined, but the layout is up to the game developer
     struct Action {
         // In TTT, action is simply the location player wants to place a piece
         // at. In other games, this may also include the mark on a cell, or
@@ -22,8 +30,6 @@ library TTTGame {
         uint y;
     }
 
-    // A cell in a game board
-    // Cell can be freely defined in game library
     struct Cell {
         // In TTT, only the player who owns the cell is needed in a piece
         // Use 0 for no owner
@@ -38,59 +44,44 @@ library TTTGame {
     /// @return the initial game state
     function init(Connect.Tools tools, uint playerCount)
         internal
-        returns (Connect.State)
+        returns (State, uint)
     {
         // start the game with control setting to random
         // since player ID starts at 0, for a 2 player game it would be 1 or 2
-        return Connect.State({
-            control: 1 + tools.random.next() % playerCount
-        });
+        uint initialControl = 1 + tools.random.next() % playerCount;
+        return (State(), initialControl);
     }
 
     /// Gets the next player in control
     /// @return the ID of the next player in control
-    function next(Connect.State storage state)
+    function next(State storage state, Connect.Info storage info)
         internal view
         returns (uint)
     {
         // In TTT simply alternate
-        if (state.control == 1) {
-            return 2;
-        } else if (state.control == 2) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return 1 + info.control % info.playerCount;
     }
 
     /// Gets the game state updates
     /// @return An array of state updates
-    function update(Connect.State storage state, Connect.Input memory input)
-        internal view
-        returns (Connect.Update[])
+    function update(State storage state, Connect.Input memory input)
+        internal
     {
         // in TTT only one cell is updated
         Action memory action = input.action;
-        Connect.Update[] memory arr = new Connect.Update[](1);
-        arr[0] = Connect.Update({
-            selector: encodeSelector(action.x, action.y),
-            cell: Cell({
-                pid: input.pid
-            })
-        });
-        return arr;
+        state.board[encodeSelector(action.x, action.y)].pid = input.pid;
     }
 
     /// Checks if a move is legal
     /// @return True if move is legal
-    function legal(Connect.State storage state, Connect.Input memory input)
+    function legal(State storage state, Connect.Info info, Connect.Input memory input)
         internal view
         returns (bool)
     {
         uint x = input.action.x;
         uint y = input.action.y;
-        // player must take turns
-        if (state.control != input.pid) {
+        // player can only play in his/her turn
+        if (info.control != input.pid) {
             return false;
         }
         // xy must not be out of range
@@ -106,7 +97,7 @@ library TTTGame {
 
     /// Checks if state is terminal
     /// @return True if in terminal state
-    function terminal(Connect.State storage state)
+    function terminal(State storage state)
         internal view
         returns (bool)
     {
@@ -122,7 +113,7 @@ library TTTGame {
 
     /// Gets the score of a player
     /// @return A number between 0 and 100 (inclusive)
-    function goal(Connect.State storage state, uint pid)
+    function goal(State storage state, uint pid)
         internal view
         returns (uint)
     {
@@ -174,7 +165,7 @@ library TTTGame {
     }
 
     // 0 no winner yet, 1 or 2 if any player has won the game
-    function checkWinner(Connect.State storage state)
+    function checkWinner(State storage state)
         private view
         returns (uint)
     {
@@ -228,7 +219,7 @@ library TTTGame {
         return 0;
     }
 
-    function boardFull(Connect.State storage state)
+    function boardFull(State storage state)
         private view
         returns (bool)
     {

@@ -8,14 +8,10 @@ import { TTTGame as Game } from "./TTTGame.sol";
 // Connect library connects Controller to Game
 // GDL inspired interface
 library Connect {
-    struct State {
-        mapping(bytes32 => Game.Cell) board;
+    // Info is a piece of Game.State that is read-only to the game library
+    struct Info {
+        uint playerCount;
         uint control;
-    }
-
-    struct Update {
-        bytes32 selector; // which cell to update
-        Game.Cell cell; // what to update it to
     }
 
     struct Input {
@@ -29,40 +25,39 @@ library Connect {
 
     function init(Tools tools, uint playerCount)
         internal
-        returns (State)
+        returns (Game.State, uint)
     {
         return Game.init(tools, playerCount);
     }
 
-    function next(State storage state)
+    function next(Game.State storage state, Info storage info)
         internal view
         returns (uint)
     {
-        return Game.next(state);
+        return Game.next(state, info);
     }
 
-    function update(State storage state, Input memory input)
-        internal view
-        returns (Update[])
+    function update(Game.State storage state, Input memory input)
+        internal
     {
         return Game.update(state, input);
     }
 
-    function legal(State storage state, Input memory input)
+    function legal(Game.State storage state, Info storage info, Input memory input)
         internal view
         returns (bool)
     {
-        return Game.legal(state, input);
+        return Game.legal(state, info, input);
     }
 
-    function terminal(State storage state)
+    function terminal(Game.State storage state)
         internal view
         returns (bool)
     {
         return Game.terminal(state);
     }
 
-    function goal(State storage state, uint pid)
+    function goal(Game.State storage state, uint pid)
         internal view
         returns (uint)
     {
