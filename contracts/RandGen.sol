@@ -66,14 +66,14 @@ contract RandGen is Ownable {
         return _commit(sender, _hash);
     }
 
-    // function commitFromPlayer(bytes32 _hash)
-    //     onlyPlayer(msg.sender)
-    //     onlyDuring(State.Commit)
-    //     external
-    //     returns (bool)
-    // {
-    //     return _commit(msg.sender, _hash);
-    // }
+    function commitByPlayer(bytes32 _hash)
+        onlyPlayer(msg.sender)
+        onlyDuring(State.Commit)
+        external
+        returns (bool)
+    {
+        return _commit(msg.sender, _hash);
+    }
 
     function reveal(address sender, uint _num)
         onlyOwner
@@ -84,14 +84,14 @@ contract RandGen is Ownable {
         return _reveal(sender, _num);
     }
 
-    // function revealFromPlayer(uint _num)
-    //     onlyPlayer(msg.sender)
-    //     onlyDuring(State.Reveal)
-    //     external
-    //     returns (bool)
-    // {
-    //     return _reveal(msg.sender, _num);
-    // }
+    function revealByPlayer(uint _num)
+        onlyPlayer(msg.sender)
+        onlyDuring(State.Reveal)
+        external
+        returns (bool)
+    {
+        return _reveal(msg.sender, _num);
+    }
 
     function next()
         onlyOwner

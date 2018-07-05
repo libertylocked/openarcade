@@ -11,7 +11,7 @@ contract Controller is Ownable, Destructible {
     using SafeMath for uint;
 
     Game.State state;
-    Connect.Info info;
+    Connect.Info info; // part of state game is not allowed to modify
     Connect.Tools tools;
     mapping(address => bool) public deposited;
     uint public depositedCount;
@@ -108,7 +108,7 @@ contract Controller is Ownable, Destructible {
         require(tools.random.state() == RandGen.State.Ready);
         // init state from game library
         // set state and game info
-        (state, info.control) = Connect.init(tools, playersArray.length);
+        info.control = Connect.init(state, tools, playersArray.length);
         lifecycle = LifeCycle.Play;
     }
 
@@ -125,9 +125,9 @@ contract Controller is Ownable, Destructible {
         // check if legal
         require(Connect.legal(state, info, input));
         // game must not be in terminal state
-        require(Connect.terminal(state) == false);
+        require(Connect.terminal(state, info) == false);
         // update game state
-        Connect.update(state, input);
+        Connect.update(state, tools, input);
         // update control
         info.control = Connect.next(state, info);
         // emit log
@@ -139,11 +139,11 @@ contract Controller is Ownable, Destructible {
         external
     {
         // game ends in terminal state
-        require(Connect.terminal(state));
+        require(Connect.terminal(state, info));
         // calculate payout for each player
         uint playerPoints;
         for (uint i = 0; i < playersArray.length; i++) {
-            playerPoints = Connect.goal(state, players[playersArray[i]]);
+            playerPoints = Connect.goal(state, info, players[playersArray[i]]);
             points[playersArray[i]] = playerPoints;
             totalPoints = totalPoints.add(playerPoints);
         }
@@ -169,7 +169,7 @@ contract Controller is Ownable, Destructible {
         public view
         returns (bool)
     {
-        return Connect.terminal(state);
+        return Connect.terminal(state, info);
     }
 
     function control()

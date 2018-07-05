@@ -6,7 +6,6 @@ import "./Util.sol";
 
 
 // TTTGame is the Tic Tac Toe game library
-// No function in the library should mutate the state.
 // Internal functions and public functions are strictly defined, their
 //  function signatures should be consistent in all games.
 // Structs can be freely modified, as long as their names do not change.
@@ -41,15 +40,15 @@ library TTTGame {
     //  signatures.
 
     /// Inits game state
-    /// @return the initial game state
-    function init(Connect.Tools tools, uint playerCount)
+    function init(State storage state, Connect.Tools storage tools, uint playerCount)
         internal
-        returns (State, uint)
+        returns (uint)
     {
         // start the game with control setting to random
         // since player ID starts at 0, for a 2 player game it would be 1 or 2
         uint initialControl = 1 + tools.random.next() % playerCount;
-        return (State(), initialControl);
+        // since all cells are initialized to zero, no state modification is needed
+        return initialControl;
     }
 
     /// Gets the next player in control
@@ -62,9 +61,8 @@ library TTTGame {
         return 1 + info.control % info.playerCount;
     }
 
-    /// Gets the game state updates
-    /// @return An array of state updates
-    function update(State storage state, Connect.Input memory input)
+    /// Updates the game state
+    function update(State storage state, Connect.Tools storage tools, Connect.Input memory input)
         internal
     {
         // in TTT only one cell is updated
@@ -74,7 +72,7 @@ library TTTGame {
 
     /// Checks if a move is legal
     /// @return True if move is legal
-    function legal(State storage state, Connect.Info info, Connect.Input memory input)
+    function legal(State storage state, Connect.Info storage info, Connect.Input memory input)
         internal view
         returns (bool)
     {
@@ -97,7 +95,7 @@ library TTTGame {
 
     /// Checks if state is terminal
     /// @return True if in terminal state
-    function terminal(State storage state)
+    function terminal(State storage state, Connect.Info storage info)
         internal view
         returns (bool)
     {
@@ -112,8 +110,8 @@ library TTTGame {
     }
 
     /// Gets the score of a player
-    /// @return A number between 0 and 100 (inclusive)
-    function goal(State storage state, uint pid)
+    /// @return A number for score
+    function goal(State storage state, Connect.Info storage info, uint pid)
         internal view
         returns (uint)
     {

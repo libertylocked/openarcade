@@ -23,11 +23,11 @@ library Connect {
         RandGen random;
     }
 
-    function init(Tools tools, uint playerCount)
+    function init(Game.State storage state, Tools storage tools, uint playerCount)
         internal
-        returns (Game.State, uint)
+        returns (uint)
     {
-        return Game.init(tools, playerCount);
+        return Game.init(state, tools, playerCount);
     }
 
     function next(Game.State storage state, Info storage info)
@@ -37,10 +37,10 @@ library Connect {
         return Game.next(state, info);
     }
 
-    function update(Game.State storage state, Input memory input)
+    function update(Game.State storage state, Tools storage tools, Input memory input)
         internal
     {
-        return Game.update(state, input);
+        return Game.update(state, tools, input);
     }
 
     function legal(Game.State storage state, Info storage info, Input memory input)
@@ -50,18 +50,18 @@ library Connect {
         return Game.legal(state, info, input);
     }
 
-    function terminal(Game.State storage state)
+    function terminal(Game.State storage state, Info storage info)
         internal view
         returns (bool)
     {
-        return Game.terminal(state);
+        return Game.terminal(state, info);
     }
 
-    function goal(Game.State storage state, uint pid)
+    function goal(Game.State storage state, Info storage info, uint pid)
         internal view
         returns (uint)
     {
-        return Game.goal(state, pid);
+        return Game.goal(state, info, pid);
     }
 
     function decodeAction(bytes s)
