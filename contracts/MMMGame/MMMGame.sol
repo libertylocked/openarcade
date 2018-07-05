@@ -235,8 +235,7 @@ library MMMGame {
             uint value = 0;
             (suit, value) = decodeCard(card);
             if (state.deck[card] == pid) {
-                if (normalizeSuit(suit) == state.prevSuit
-                    || value == state.prevValue) {
+                if (normalizeSuit(suit) == state.prevSuit || value == state.prevValue) {
                     return true;
                 }
             }
