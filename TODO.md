@@ -5,3 +5,7 @@
   - Move some code to library
   - Make RNG optional
   - Move some RNG code to library
+- Build script / Makefile
+  - Or some scaffolding tool
+- Reset RNG seed from library functions
+- Payout scoring divide by zero

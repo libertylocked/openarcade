@@ -55,10 +55,10 @@ contract('RandGen', () => {
       assert.equal(tx.logs[1].args.state, 1)
       assert.equal(await instance.state(), 1)
     })
-    // it('should allow non owner to directly commit', async () => {
-    //   await instance.commit(0, aliceCommit, { from: alice })
-    //   assert.equal(await instance.commits(alice), aliceCommit)
-    // })
+    it('should allow non owner to directly commit', async () => {
+      await instance.commitByPlayer(aliceCommit, { from: alice })
+      assert.equal(await instance.commits(alice), aliceCommit)
+    })
   })
   describe('reveal', () => {
     beforeEach('commit all the numbers from alice bob carol', async () => {
@@ -96,10 +96,10 @@ contract('RandGen', () => {
       assert.equal(tx.logs[1].args.state, 2)
       assert.equal(await instance.state(), 2)
     })
-    // it('should allow non owner to directly reveal', async () => {
-    //   await instance.reveal(0, aliceNum, { from: alice })
-    //   assert.equal(await instance.reveals(alice), aliceNum)
-    // })
+    it('should allow non owner to directly reveal', async () => {
+      await instance.revealByPlayer(aliceNum, { from: alice })
+      assert.equal(await instance.reveals(alice), aliceNum)
+    })
   })
   describe('next', () => {
     beforeEach('commit and reveal', async () => {
@@ -138,6 +138,51 @@ contract('RandGen', () => {
       assert.equal(`0x${(await instance.current()).toString(16)}`, nextNumHex2)
       await instance.next()
       assert.equal(`0x${(await instance.current()).toString(16)}`, nextNumHex3)
+    })
+  })
+  describe('reset', () => {
+    beforeEach('commit and reveal and next', async () => {
+      await instance.commit(alice, aliceCommit)
+      await instance.commit(bob, bobCommit)
+      await instance.commit(carol, carolCommit)
+      await instance.reveal(alice, aliceNum)
+      await instance.reveal(bob, bobNum)
+      await instance.reveal(carol, carolNum)
+      // get next 3 randoms so the index and seed is updated
+      await instance.next()
+      await instance.next()
+      await instance.next()
+    })
+    it('should reset the state', async () => {
+      await instance.reset()
+      assert.equal(await instance.state(), 0)
+      assert.equal(await instance.seed(), 0)
+      assert.equal(await instance.index(), 0)
+      assert.equal(await instance.commitCount(), 0)
+      assert.equal(await instance.commits(alice), 0)
+      assert.equal(await instance.commits(bob), 0)
+      assert.equal(await instance.commits(carol), 0)
+      assert.equal(await instance.revealCount(), 0)
+      assert.equal(await instance.reveals(alice), 0)
+      assert.equal(await instance.reveals(bob), 0)
+      assert.equal(await instance.reveals(carol), 0)
+      // next and current call should revert
+      await assertRevert(instance.current())
+      await assertRevert(instance.next())
+    })
+    it('should allow commit and reveal after reset', async () => {
+      await instance.reset()
+      await instance.commit(alice, aliceCommit)
+      await instance.commit(bob, bobCommit)
+      await instance.commit(carol, carolCommit)
+      await instance.reveal(alice, aliceNum)
+      await instance.reveal(bob, bobNum)
+      await instance.reveal(carol, carolNum)
+      const nextNumHex = eutil.bufferToHex(eutil.keccak256(eutil.setLengthLeft(aliceNum ^ bobNum ^ carolNum, 32)))
+      const tx = await instance.next()
+      assert.equal(tx.logs[0].event, 'LogRandomGenerated')
+      assert.equal(tx.logs[0].args.index, 1)
+      assert.equal(`0x${tx.logs[0].args.number.toString(16)}`, nextNumHex)
     })
   })
 })

@@ -8,7 +8,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 //  who is the owner serves as a relay to call commit/reveal
 contract RandGen is Ownable {
     mapping(address => bool) public players;
-    uint public playerCount;
+    address[] public playersArray;
     mapping(address => bytes32) public commits;
     uint public commitCount;
     mapping(address => uint) public reveals;
@@ -53,7 +53,7 @@ contract RandGen is Ownable {
         for (uint i = 0; i < _players.length; i++) {
             players[_players[i]] = true;
         }
-        playerCount = _players.length;
+        playersArray = _players;
         state = State.Commit;
     }
 
@@ -105,12 +105,39 @@ contract RandGen is Ownable {
         return seed;
     }
 
+    function reset()
+        onlyOwner
+        onlyDuring(State.Ready)
+        external
+        returns (bool)
+    {
+        state = State.Commit;
+        for (uint i = 0; i < playersArray.length; i++) {
+            commits[playersArray[i]] = bytes32(0);
+            reveals[playersArray[i]] = uint(0);
+        }
+        commitCount = 0;
+        revealCount = 0;
+        seed = 0;
+        index = 0;
+        return true;
+    }
+
+    /* Constant functions */
+
     function current()
         onlyDuring(State.Ready)
         external view
         returns (uint)
     {
         return seed;
+    }
+
+    function playerCount()
+        external view
+        returns (uint)
+    {
+        return playersArray.length;
     }
 
     /* Private functions */
@@ -128,7 +155,7 @@ contract RandGen is Ownable {
         commits[sender] = _hash;
         commitCount++;
         emit LogCommitted(sender, _hash);
-        if (commitCount == playerCount) {
+        if (commitCount == playersArray.length) {
             state = State.Reveal;
             emit LogStateChanged(State.Reveal);
         }
@@ -148,7 +175,7 @@ contract RandGen is Ownable {
         revealCount++;
         emit LogRevealed(sender, _num);
         seed ^= _num;
-        if (revealCount == playerCount) {
+        if (revealCount == playersArray.length) {
             state = State.Ready;
             emit LogStateChanged(State.Ready);
         }
