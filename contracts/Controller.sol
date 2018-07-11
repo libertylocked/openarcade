@@ -159,8 +159,13 @@ contract Controller is Ownable, Destructible {
         public
     {
         require(points[msg.sender] > 0);
-        uint sendAmount = BET_AMOUNT.mul(playersArray.length)
-            .div(totalPoints).mul(points[msg.sender]);
+        uint sendAmount;
+        if (totalPoints == 0) {
+            sendAmount = BET_AMOUNT.div(playersArray.length);
+        } else {
+            sendAmount = BET_AMOUNT.mul(playersArray.length)
+                .div(totalPoints).mul(points[msg.sender]);
+        }
         // clear player points before transfer
         points[msg.sender] = 0;
         msg.sender.transfer(sendAmount);
