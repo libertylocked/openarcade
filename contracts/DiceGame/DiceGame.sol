@@ -7,6 +7,8 @@ import "../Util.sol";
 
 // DiceGame is a pretty contrived example to show how RNG reset works
 library DiceGame {
+    using SafeMath for uint256;
+
     struct State {
         uint roundsLeft;
         mapping(uint=>uint) score;
@@ -17,6 +19,8 @@ library DiceGame {
         // player can choose to roll or give up
         bool roll;
     }
+
+    event LogRoll(uint pid, uint roll);
 
     /* Internal functions */
     // All internal functions must be defined with the exact function
@@ -47,7 +51,10 @@ library DiceGame {
     {
         // it's guaranteed that update will be executed when RNG is in ready state
         if (input.action.roll) {
-            state.score[input.pid] = tools.random.next();
+            uint prevScore = state.score[input.pid];
+            uint roll = 1 + tools.random.next() % 6;
+            emit LogRoll(input.pid, roll);
+            state.score[input.pid] = prevScore.add(roll);
             // reset the RNG so next time we'll get fresh randomness
             tools.random.reset();
         }
