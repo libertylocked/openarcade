@@ -13,9 +13,13 @@ module.exports = class XRandom {
       } else if (typeof v === 'number') {
         return bignum(v)
       } else if (typeof v === 'string') {
-        return bignum(eutil.stripHexPrefix(v))
+        if (eutil.isHexPrefixed(v)) {
+          return bignum(eutil.stripHexPrefix(v), 16)
+        } else {
+          return bignum(v, 10)
+        }
       } else {
-        throw new Error('Value must be a hex string, number, bignum, or bignumber')
+        throw new Error('Value must be a string, number, bignum, or bignumber')
       }
     })
     // compute initial seed
