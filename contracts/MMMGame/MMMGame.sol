@@ -80,7 +80,7 @@ library MMMGame {
     }
 
     /// Updates the game state
-    function update(State storage state, Connect.Tools storage tools, Connect.Input memory input)
+    function update(State storage state, Connect.Tools storage tools, Connect.Info storage info, Connect.Input memory input)
         internal
     {
         // in MMM only one cell is updated

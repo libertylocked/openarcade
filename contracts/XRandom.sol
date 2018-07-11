@@ -4,9 +4,11 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
 // Random number generator using commit-reveal.
+// Numbers are computed from XOR-keccak256 from the seed
 // This contract should be deployed by a controller. The controller
 //  who is the owner serves as a relay to call commit/reveal
-contract RandGen is Ownable {
+contract XRandom is Ownable {
+    address public relayer;
     mapping(address => bool) public players;
     address[] public playersArray;
     mapping(address => bytes32) public commits;
@@ -34,6 +36,11 @@ contract RandGen is Ownable {
         _;
     }
 
+    modifier onlyRelayer {
+        require(msg.sender == relayer);
+        _;
+    }
+
     modifier onlyNotCommitted(address sender) {
         require(commits[sender] == 0);
         _;
@@ -49,16 +56,17 @@ contract RandGen is Ownable {
         _;
     }
 
-    constructor(address[] _players) public {
+    constructor(address[] _players, address _relayer) public {
         for (uint i = 0; i < _players.length; i++) {
             players[_players[i]] = true;
         }
         playersArray = _players;
+        relayer = _relayer;
         state = State.Commit;
     }
 
     function commit(address sender, bytes32 _hash)
-        onlyOwner
+        onlyRelayer
         onlyDuring(State.Commit)
         external
         returns (bool)
@@ -76,7 +84,7 @@ contract RandGen is Ownable {
     }
 
     function reveal(address sender, uint _num)
-        onlyOwner
+        onlyRelayer
         onlyDuring(State.Reveal)
         external
         returns (bool)
@@ -131,6 +139,13 @@ contract RandGen is Ownable {
         returns (uint)
     {
         return seed;
+    }
+
+    function ready()
+        external view
+        returns (bool)
+    {
+        return state == State.Ready;
     }
 
     function playerCount()

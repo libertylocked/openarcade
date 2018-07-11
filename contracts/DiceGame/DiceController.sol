@@ -4,10 +4,10 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
 import "./Connect.sol";
-import "./XRandom.sol";
+import "../XRandom.sol";
 
 
-contract Controller is Ownable, Destructible {
+contract DiceController is Ownable, Destructible {
     using SafeMath for uint;
 
     Game.State state;

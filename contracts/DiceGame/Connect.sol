@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 import "../XRandom.sol";
 // change this line for other games
-import { MMMGame as Game } from "./MMMGame.sol";
+import { DiceGame as Game } from "./DiceGame.sol";
 
 
 // Connect library connects Controller to Game

@@ -1,11 +1,10 @@
 import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
-import eutil from 'ethereumjs-util'
-import XRandom from './helpers/xrandom'
+import JXRandom from './helpers/xrandom'
 import { createCommit } from './helpers/randHelper'
 
-const RandGen = artifacts.require('./RandGen.sol')
+const XRandom = artifacts.require('./XRandom.sol')
 
-const [, alice, bob, carol, david] = web3.eth.accounts
+const [owner, alice, bob, carol, david] = web3.eth.accounts
 const aliceNum = 42
 const aliceCommit = createCommit(aliceNum)
 const bobNum = 1337
@@ -13,19 +12,19 @@ const bobCommit = createCommit(bobNum)
 const carolNum = 97
 const carolCommit = createCommit(carolNum)
 
-contract('RandGen', () => {
+contract('XRandom', () => {
   let instance
-  beforeEach('deploy a new RandGen contract', async () => {
-    instance = await RandGen.new([alice, bob, carol])
+  beforeEach('deploy a new XRandom contract', async () => {
+    instance = await XRandom.new([alice, bob, carol], owner)
   })
   describe('constructor', () => {
     it('should store the player count correctly if there is 2 players', async () => {
-      const instance = await RandGen.new([alice, bob])
+      const instance = await XRandom.new([alice, bob], owner)
       assert.equal(await instance.playerCount(), 2)
     })
     it('should store the player count correctly if there is 10 players', async () => {
       assert.isAtLeast(web3.eth.accounts.length, 10, 'testrpc does not have at least 10 accounts')
-      const instance = await RandGen.new(web3.eth.accounts.slice(0, 10))
+      const instance = await XRandom.new(web3.eth.accounts.slice(0, 10), owner)
       assert.equal(await instance.playerCount(), 10)
     })
     it('should set the starting state to commit', async () => {
@@ -76,7 +75,7 @@ contract('RandGen', () => {
       assert.equal(await instance.reveals(alice), aliceNum)
     })
     it('should not allow reveal before all committed', async () => {
-      let rng = await RandGen.new([alice, bob])
+      let rng = await XRandom.new([alice, bob], owner)
       // only alice commit, bob does not
       await rng.commit(alice, aliceCommit)
       await assertRevert(rng.reveal(alice, aliceNum))
@@ -112,7 +111,7 @@ contract('RandGen', () => {
       await instance.reveal(carol, carolNum)
     })
     it('should revert if state is not set to done', async () => {
-      const instance = await RandGen.new([alice, bob, carol])
+      const instance = await XRandom.new([alice, bob, carol], owner)
       await assertRevert(instance.current())
       await assertRevert(instance.next())
     })
@@ -122,7 +121,7 @@ contract('RandGen', () => {
       assert.equal((await instance.seed()).toNumber(), xord)
     })
     it('should return the next random number', async () => {
-      const nextNum = new XRandom([aliceNum, bobNum, carolNum]).next()
+      const nextNum = new JXRandom([aliceNum, bobNum, carolNum]).next()
       const tx = await instance.next()
       assert.equal(tx.logs[0].event, 'LogRandomGenerated')
       assert.equal(tx.logs[0].args.index, 1)
@@ -130,7 +129,7 @@ contract('RandGen', () => {
       assert.equal((await instance.current()).toString(16), nextNum.toString(16))
     })
     it('should return different numbers when calling next consecutively', async () => {
-      const rng = new XRandom([aliceNum, bobNum, carolNum])
+      const rng = new JXRandom([aliceNum, bobNum, carolNum])
       await instance.next()
       assert.equal((await instance.current()).toString(16), rng.next().toString(16))
       await instance.next()
@@ -177,7 +176,7 @@ contract('RandGen', () => {
       await instance.reveal(alice, aliceNum)
       await instance.reveal(bob, bobNum)
       await instance.reveal(carol, carolNum)
-      const nextNum = new XRandom([aliceNum, bobNum, carolNum]).next()
+      const nextNum = new JXRandom([aliceNum, bobNum, carolNum]).next()
       const tx = await instance.next()
       assert.equal(tx.logs[0].event, 'LogRandomGenerated')
       assert.equal(tx.logs[0].args.index, 1)

@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "./RandGen.sol";
+import "./XRandom.sol";
 // change this line for other games
 import { TTTGame as Game } from "./TTTGame.sol";
 
@@ -20,7 +20,7 @@ library Connect {
     }
 
     struct Tools {
-        RandGen random;
+        XRandom random;
     }
 
     function init(Game.State storage state, Tools storage tools, uint playerCount)
@@ -37,10 +37,10 @@ library Connect {
         return Game.next(state, info);
     }
 
-    function update(Game.State storage state, Tools storage tools, Input memory input)
+    function update(Game.State storage state, Tools storage tools, Info storage info, Input memory input)
         internal
     {
-        return Game.update(state, tools, input);
+        return Game.update(state, tools, info, input);
     }
 
     function legal(Game.State storage state, Info storage info, Input memory input)
@@ -69,12 +69,5 @@ library Connect {
         returns (Game.Action)
     {
         return Game.decodeAction(s);
-    }
-
-    function encodeAction(uint x, uint y)
-        public pure
-        returns (bytes)
-    {
-        return Game.encodeAction(x, y);
     }
 }
