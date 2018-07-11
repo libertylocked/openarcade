@@ -12,7 +12,7 @@ const encodeActionABI = (x, y) => eutil.bufferToHex(abi.rawEncode(['uint256', 'u
 contract('TTTGame + Controller + Connect', (accounts) => {
   let controller
   let encodeAction
-  const [ , player1, player2 ] = accounts
+  const [, player1, player2] = accounts
   before('get the encode action function', async () => {
     // const gameLib = await Game.deployed()
     // encodeAction = newActionEncoder(gameLib)

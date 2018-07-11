@@ -1,5 +1,6 @@
 import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
 import eutil from 'ethereumjs-util'
+import XRandom from './helpers/xrandom'
 import { createCommit } from './helpers/randHelper'
 
 const RandGen = artifacts.require('./RandGen.sol')
@@ -121,23 +122,21 @@ contract('RandGen', () => {
       assert.equal((await instance.seed()).toNumber(), xord)
     })
     it('should return the next random number', async () => {
-      const nextNumHex = eutil.bufferToHex(eutil.keccak256(eutil.setLengthLeft(aliceNum ^ bobNum ^ carolNum, 32)))
+      const nextNum = new XRandom([aliceNum, bobNum, carolNum]).next()
       const tx = await instance.next()
       assert.equal(tx.logs[0].event, 'LogRandomGenerated')
       assert.equal(tx.logs[0].args.index, 1)
-      assert.equal(`0x${tx.logs[0].args.number.toString(16)}`, nextNumHex)
-      assert.equal(`0x${(await instance.current()).toString(16)}`, nextNumHex)
+      assert.equal(tx.logs[0].args.number.toString(16), nextNum.toString(16))
+      assert.equal((await instance.current()).toString(16), nextNum.toString(16))
     })
     it('should return different numbers when calling next consecutively', async () => {
-      const nextNumHex1 = eutil.bufferToHex(eutil.keccak256(eutil.setLengthLeft(aliceNum ^ bobNum ^ carolNum, 32)))
-      const nextNumHex2 = eutil.bufferToHex(eutil.keccak256(nextNumHex1))
-      const nextNumHex3 = eutil.bufferToHex(eutil.keccak256(nextNumHex2))
+      const rng = new XRandom([aliceNum, bobNum, carolNum])
       await instance.next()
-      assert.equal(`0x${(await instance.current()).toString(16)}`, nextNumHex1)
+      assert.equal((await instance.current()).toString(16), rng.next().toString(16))
       await instance.next()
-      assert.equal(`0x${(await instance.current()).toString(16)}`, nextNumHex2)
+      assert.equal((await instance.current()).toString(16), rng.next().toString(16))
       await instance.next()
-      assert.equal(`0x${(await instance.current()).toString(16)}`, nextNumHex3)
+      assert.equal((await instance.current()).toString(16), rng.next().toString(16))
     })
   })
   describe('reset', () => {
@@ -178,11 +177,11 @@ contract('RandGen', () => {
       await instance.reveal(alice, aliceNum)
       await instance.reveal(bob, bobNum)
       await instance.reveal(carol, carolNum)
-      const nextNumHex = eutil.bufferToHex(eutil.keccak256(eutil.setLengthLeft(aliceNum ^ bobNum ^ carolNum, 32)))
+      const nextNum = new XRandom([aliceNum, bobNum, carolNum]).next()
       const tx = await instance.next()
       assert.equal(tx.logs[0].event, 'LogRandomGenerated')
       assert.equal(tx.logs[0].args.index, 1)
-      assert.equal(`0x${tx.logs[0].args.number.toString(16)}`, nextNumHex)
+      assert.equal(tx.logs[0].args.number.toString(16), nextNum.toString(16))
     })
   })
 })
