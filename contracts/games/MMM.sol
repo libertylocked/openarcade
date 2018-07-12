@@ -1,16 +1,16 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Connect.sol";
 import "../Util.sol";
+import { MMMConnect as Connect } from "../.generated/MMMConnect.sol";
 
 
-// MMMGame is the Mau Mau Minus game library
+// MMM is the Mau Mau Minus game library
 // Internal functions and public functions are strictly defined, their
 //  function signatures should be consistent in all games.
 // Structs can be freely modified, as long as their names do not change.
 // Note: pid (player ID) is always non zero.
-library MMMGame {
+library MMM {
     // State is the state of the game
     // This struct must be defined, but the layout is up to the game developer
     struct State {

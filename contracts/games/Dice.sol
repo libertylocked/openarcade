@@ -1,12 +1,12 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Connect.sol";
 import "../Util.sol";
+import { DiceConnect as Connect } from "../.generated/DiceConnect.sol";
 
 
 // DiceGame is a pretty contrived example to show how RNG reset works
-library DiceGame {
+library Dice {
     using SafeMath for uint256;
 
     struct State {

@@ -8,10 +8,12 @@
     "lint:sol": "solium -d .",
     "lint:js": "eslint migrations test",
     "lint": "npm run lint:sol && npm run lint:js",
-    "compile": "truffle compile",
+    "prebuild": "node scripts/prebuild.js",
+    "compile": "npm run prebuild && truffle compile",
     "migrate": "truffle migrate",
     "test": "truffle test",
-    "coverage": "solidity-coverage"
+    "coverage": "solidity-coverage",
+    "prepare": "npm run prebuild"
   },
   "repository": {
     "type": "git",
@@ -29,7 +31,7 @@
     "babel-register": "^6.26.0",
     "babel-runtime": "^6.26.0",
     "bignum": "^0.13.0",
-    "eslint": "^5.0.1",
+    "eslint": "^5.1.0",
     "eslint-config-standard": "^12.0.0-alpha.0",
     "eslint-plugin-import": "^2.13.0",
     "eslint-plugin-node": "^6.0.1",
@@ -37,9 +39,10 @@
     "eslint-plugin-standard": "^3.1.0",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^5.2.0",
-    "ganache-cli": "^6.1.4",
-    "solidity-coverage": "^0.5.4",
-    "solium": "^1.1.7",
+    "ganache-cli": "^6.1.6",
+    "rimraf": "^2.6.2",
+    "solidity-coverage": "^0.5.5",
+    "solium": "^1.1.8",
     "truffle": "4.1.13"
   },
   "dependencies": {

@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Connect.sol";
 import "./Util.sol";
+import "./Connect.sol";
 
 
 // TTTGame is the Tic Tac Toe game library
