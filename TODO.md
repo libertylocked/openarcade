@@ -7,3 +7,8 @@
   - Move some RNG code to library
 - Staged commit-reveal
   - Every time player sends to `play` player makes a commit and reveals the previous commit
+  - Interleaved commit-reveal
+    - One player commit-reveal per round, updates the RNG seed
+    - Game calls `rng.refresh()` to request seed update
+- Init parameters
+  - Passing some optional init params into game lib's `init`
