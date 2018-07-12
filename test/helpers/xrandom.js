@@ -10,10 +10,13 @@ class XRandom {
     this._index = bignum(0)
   }
 
-  next () {
+  next (bound) {
     this._current = bignum.fromBuffer(
       eutil.keccak256(eutil.setLengthLeft(this.current.toBuffer(), 32)))
     this._index = this._index.add(1)
+    if (bound) {
+      return this.current.mod(XRandom.toBignum(bound))
+    }
     return this.current
   }
 
