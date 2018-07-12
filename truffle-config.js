@@ -1,7 +1,7 @@
 require('babel-register')({
   ignore: /node_modules\/(?!openzeppelin-solidity\/test\/helpers)/
-});
-require('babel-polyfill');
+})
+require('babel-polyfill')
 
 module.exports = {
   networks: {
@@ -12,11 +12,11 @@ module.exports = {
       network_id: 5777
     },
     coverage: {
-      host: "localhost",
-      network_id: "*",
+      host: 'localhost',
+      network_id: '*',
       port: 8555,
       gas: 0xfffffffffff,
       gasPrice: 0x01
-    },
+    }
   }
-};
+}
