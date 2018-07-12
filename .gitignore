@@ -70,3 +70,5 @@ coverage.json
 
 # Web3 requests
 .node-xmlhttprequest-sync-*
+
+/contracts/.generated

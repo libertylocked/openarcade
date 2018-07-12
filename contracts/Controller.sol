@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
 import "./Connect.sol";
+import "./TTTGame.sol";
 import "./XRandom.sol";
 
 
