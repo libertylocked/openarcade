@@ -60,17 +60,15 @@ const prebuild = async () => {
   const connectTempl = await readConnectTemplate()
   const controllerTmpl = await readControllerTemplate()
   const fnames = await readdir(path.resolve(__dirname, '../contracts/', GAMES_FOLDER))
-  fnames.forEach(async (fname) => {
-    if (path.extname(fname) !== '.sol') {
-      // skip non solidity files
-      return
-    }
+  fnames.filter((fname) => path.extname(fname) === '.sol').forEach(async (fname) => {
+    console.log(`Prebuilding ${fname}...`)
     // get the game name
     const gameName = path.basename(fname, '.sol')
     const gameConnect = generateConnect(connectTempl, gameName)
     const gameController = generateController(controllerTmpl, gameName)
     await writeFile(path.resolve(generatedFolder, `${gameName}Connect.sol`), gameConnect)
     await writeFile(path.resolve(generatedFolder, `${gameName}Controller.sol`), gameController)
+    console.log(`Prebuild ${fname} done`)
   })
 }
 
