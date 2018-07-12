@@ -1,5 +1,5 @@
 import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
-import JXRandom from './helpers/xrandom'
+import XRandomJS from './helpers/xrandom'
 import { createCommit } from './helpers/randHelper'
 
 const XRandom = artifacts.require('./XRandom.sol')
@@ -121,7 +121,7 @@ contract('XRandom', () => {
       assert.equal((await instance.seed()).toNumber(), xord)
     })
     it('should return the next random number', async () => {
-      const nextNum = new JXRandom([aliceNum, bobNum, carolNum]).next()
+      const nextNum = new XRandomJS([aliceNum, bobNum, carolNum]).next()
       const tx = await instance.next()
       assert.equal(tx.logs[0].event, 'LogRandomGenerated')
       assert.equal(tx.logs[0].args.index, 1)
@@ -129,7 +129,7 @@ contract('XRandom', () => {
       assert.equal((await instance.current()).toString(16), nextNum.toString(16))
     })
     it('should return different numbers when calling next consecutively', async () => {
-      const rng = new JXRandom([aliceNum, bobNum, carolNum])
+      const rng = new XRandomJS([aliceNum, bobNum, carolNum])
       await instance.next()
       assert.equal((await instance.current()).toString(16), rng.next().toString(16))
       await instance.next()
@@ -176,7 +176,7 @@ contract('XRandom', () => {
       await instance.reveal(alice, aliceNum)
       await instance.reveal(bob, bobNum)
       await instance.reveal(carol, carolNum)
-      const nextNum = new JXRandom([aliceNum, bobNum, carolNum]).next()
+      const nextNum = new XRandomJS([aliceNum, bobNum, carolNum]).next()
       const tx = await instance.next()
       assert.equal(tx.logs[0].event, 'LogRandomGenerated')
       assert.equal(tx.logs[0].args.index, 1)
