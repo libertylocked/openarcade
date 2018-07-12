@@ -3,11 +3,9 @@ const eutil = require('ethereumjs-util')
 const bignum = require('bignum')
 
 class XRandom {
-  constructor (nums) {
-    this._seed = nums.map(XRandom.toBignum)
-      .reduce((seed, v) => seed.xor(v), bignum(0))
-    this._current = this._seed
-    this._index = bignum(0)
+  constructor (inputs = []) {
+    this._seed = bignum(0)
+    this.update(inputs)
   }
 
   next (bound) {
@@ -18,6 +16,14 @@ class XRandom {
       return this.current.mod(XRandom.toBignum(bound))
     }
     return this.current
+  }
+
+  update (inputs) {
+    this._seed = this._seed.xor(
+      inputs.map(XRandom.toBignum).reduce((seed, v) => seed.xor(v), bignum(0))
+    )
+    this._current = this._seed
+    this._index = bignum(0)
   }
 
   get seed () {
