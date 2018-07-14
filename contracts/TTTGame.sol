@@ -6,21 +6,14 @@ import "./Connect.sol";
 
 
 // TTTGame is the Tic Tac Toe game library
-// Internal functions and public functions are strictly defined, their
-//  function signatures should be consistent in all games.
-// Structs can be freely modified, as long as their names do not change.
 // Note: pid (player ID) is always non zero.
 library TTTGame {
-    // State is the state of the game
-    // This struct must be defined, but the layout is up to the game developer
     struct State {
         // In TTT, we define the state as simply a mapping which is the board.
         // It's a flattened 2D array
         mapping(bytes32=>Cell) board;
     }
 
-    // Action is the action of a player
-    // This struct must be defined, but the layout is up to the game developer
     struct Action {
         // In TTT, action is simply the location player wants to place a piece
         // at. In other games, this may also include the mark on a cell, or
@@ -39,7 +32,6 @@ library TTTGame {
     // All internal functions must be defined with the exact function
     //  signatures.
 
-    /// Inits game state
     function init(State storage state, Connect.Tools storage tools, uint playerCount)
         internal
         returns (uint)
@@ -51,8 +43,6 @@ library TTTGame {
         return initialControl;
     }
 
-    /// Gets the next player in control
-    /// @return the ID of the next player in control
     function next(State storage state, Connect.Info storage info)
         internal view
         returns (uint)
@@ -61,7 +51,6 @@ library TTTGame {
         return 1 + info.control % info.playerCount;
     }
 
-    /// Updates the game state
     function update(State storage state, Connect.Tools storage tools, Connect.Info storage info, Connect.Input memory input)
         internal
     {
@@ -70,8 +59,6 @@ library TTTGame {
         state.board[encodeSelector(action.x, action.y)].pid = input.pid;
     }
 
-    /// Checks if a move is legal
-    /// @return True if move is legal
     function legal(State storage state, Connect.Info storage info, Connect.Input memory input)
         internal view
         returns (bool)
@@ -93,8 +80,6 @@ library TTTGame {
         return true;
     }
 
-    /// Checks if state is terminal
-    /// @return True if in terminal state
     function terminal(State storage state, Connect.Info storage info)
         internal view
         returns (bool)
@@ -109,8 +94,6 @@ library TTTGame {
         return false;
     }
 
-    /// Gets the score of a player
-    /// @return A number for score
     function goal(State storage state, Connect.Info storage info, uint pid)
         internal view
         returns (uint)
@@ -127,8 +110,6 @@ library TTTGame {
         }
     }
 
-    /// Decodes an action from bytes
-    /// @return The decoded action
     function decodeAction(bytes s)
         internal pure
         returns (Action)
@@ -142,15 +123,14 @@ library TTTGame {
         });
     }
 
-    /* Public functions */
-    // All public functions must be defined with the exact function
-    //  signatures
+    /* External functions */
 
     /// Encodes an action into bytes
+    /// This function is optional!
     /// This function is needed for client to encode the action
     /// @return The encoded action in bytes
     function encodeAction(uint x, uint y)
-        public pure
+        external pure
         returns (bytes)
     {
         return Util.encodePoint2D(x, y);
@@ -166,7 +146,6 @@ library TTTGame {
         return keccak256(abi.encodePacked(x, y));
     }
 
-    // 0 no winner yet, 1 or 2 if any player has won the game
     function checkWinner(State storage state)
         private view
         returns (uint)

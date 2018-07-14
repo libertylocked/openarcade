@@ -5,7 +5,7 @@ import "../Util.sol";
 import { DiceConnect as Connect } from "../.generated/DiceConnect.sol";
 
 
-// DiceGame is a pretty contrived example to show how RNG reset works
+// Dice is a pretty contrived example to show how RNG reset works
 library Dice {
     using SafeMath for uint256;
 
@@ -23,10 +23,7 @@ library Dice {
     event LogRoll(uint pid, uint roll);
 
     /* Internal functions */
-    // All internal functions must be defined with the exact function
-    //  signatures.
 
-    /// Inits game state
     function init(State storage state, Connect.Tools storage tools, uint playerCount)
         internal
         returns (uint)
@@ -36,8 +33,6 @@ library Dice {
         return 1;
     }
 
-    /// Gets the next player in control
-    /// @return the ID of the next player in control
     function next(State storage state, Connect.Info storage info)
         internal view
         returns (uint)
@@ -45,7 +40,6 @@ library Dice {
         return 1 + info.control % info.playerCount;
     }
 
-    /// Updates the game state
     function update(State storage state, Connect.Tools storage tools, Connect.Info storage info, Connect.Input memory input)
         internal
     {
@@ -64,8 +58,6 @@ library Dice {
         }
     }
 
-    /// Checks if a move is legal
-    /// @return True if move is legal
     function legal(State storage state, Connect.Info storage info, Connect.Input memory input)
         internal view
         returns (bool)
@@ -77,8 +69,6 @@ library Dice {
         return true;
     }
 
-    /// Checks if state is terminal
-    /// @return True if in terminal state
     function terminal(State storage state, Connect.Info storage info)
         internal view
         returns (bool)
@@ -86,8 +76,6 @@ library Dice {
         return state.roundsLeft == 0;
     }
 
-    /// Gets the score of a player
-    /// @return A number for score
     function goal(State storage state, Connect.Info storage info, uint pid)
         internal view
         returns (uint)
@@ -95,8 +83,6 @@ library Dice {
         return state.score[pid];
     }
 
-    /// Decodes an action from bytes
-    /// @return The decoded action
     function decodeAction(bytes s)
         internal pure
         returns (Action)
@@ -106,20 +92,12 @@ library Dice {
         });
     }
 
-    /* Public functions */
-    // All public functions must be defined with the exact function
-    //  signatures
+    /* External functions */
 
-    /// Encodes an action into bytes
-    /// This function is needed for client to encode the action
-    /// @return The encoded action in bytes
     function encodeAction(bool play)
-        public pure
+        external pure
         returns (bytes)
     {
         return abi.encode(play);
     }
-
-    /* Private functions */
-    // Can be freely defined
 }
