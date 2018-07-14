@@ -1,3 +1,4 @@
+/* solium-disable security/no-inline-assembly */
 pragma solidity 0.4.24;
 
 
@@ -7,9 +8,9 @@ library BytesUtil {
         returns (uint)
     {
         require(bs.length >= start + 32, "slicing out of range");
-        uint x = 0;
-        for (uint i = 0; i < 32; i++) {
-            x = x | uint(bs[start+31-i]) << i * 8;
+        uint x;
+        assembly {
+            x := mload(add(bs, add(0x20, start)))
         }
         return x;
     }
