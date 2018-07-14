@@ -32,27 +32,27 @@ contract XRandom is Ownable {
     event LogRandomGenerated(uint index, uint number);
 
     modifier onlyPlayer(address sender) {
-        require(players[sender]);
+        require(players[sender], "sender must be player or relayed from player");
         _;
     }
 
     modifier onlyRelayer {
-        require(msg.sender == relayer);
+        require(msg.sender == relayer, "sender must be relayer");
         _;
     }
 
     modifier onlyNotCommitted(address sender) {
-        require(commits[sender] == 0);
+        require(commits[sender] == 0, "player must not have already committed");
         _;
     }
 
     modifier onlyNotRevealed(address sender) {
-        require(reveals[sender] == 0);
+        require(reveals[sender] == 0, "player must not have already revealed");
         _;
     }
 
     modifier onlyDuring(State _state) {
-        require(state == _state);
+        require(state == _state, "state must match");
         _;
     }
 
@@ -66,45 +66,45 @@ contract XRandom is Ownable {
     }
 
     function commit(address sender, bytes32 _hash)
+        external
         onlyRelayer
         onlyDuring(State.Commit)
-        external
         returns (bool)
     {
         return _commit(sender, _hash);
     }
 
     function commitByPlayer(bytes32 _hash)
+        external
         onlyPlayer(msg.sender)
         onlyDuring(State.Commit)
-        external
         returns (bool)
     {
         return _commit(msg.sender, _hash);
     }
 
     function reveal(address sender, uint _num)
+        external
         onlyRelayer
         onlyDuring(State.Reveal)
-        external
         returns (bool)
     {
         return _reveal(sender, _num);
     }
 
     function revealByPlayer(uint _num)
+        external
         onlyPlayer(msg.sender)
         onlyDuring(State.Reveal)
-        external
         returns (bool)
     {
         return _reveal(msg.sender, _num);
     }
 
     function next()
+        external
         onlyOwner
         onlyDuring(State.Ready)
-        external
         returns (uint)
     {
         seed = uint(keccak256(abi.encodePacked(seed)));
@@ -114,9 +114,9 @@ contract XRandom is Ownable {
     }
 
     function reset()
+        external
         onlyOwner
         onlyDuring(State.Ready)
-        external
         returns (bool)
     {
         state = State.Commit;
@@ -134,8 +134,8 @@ contract XRandom is Ownable {
     /* Constant functions */
 
     function current()
-        onlyDuring(State.Ready)
         external view
+        onlyDuring(State.Ready)
         returns (uint)
     {
         return seed;
@@ -158,15 +158,15 @@ contract XRandom is Ownable {
     /* Private functions */
 
     function _commit(address sender, bytes32 _hash)
+        private
         onlyPlayer(sender)
         onlyNotCommitted(sender)
         onlyDuring(State.Commit)
-        private
         returns (bool)
     {
         // the commit can't be zero or hashed zero
-        require(_hash != 0);
-        require(_hash != keccak256(abi.encodePacked(uint(0))));
+        require(_hash != 0, "commit cannot be zero");
+        require(_hash != keccak256(abi.encodePacked(uint(0))), "commit cannot be a hashed zero");
         commits[sender] = _hash;
         commitCount++;
         emit LogCommitted(sender, _hash);
@@ -178,14 +178,14 @@ contract XRandom is Ownable {
     }
 
     function _reveal(address sender, uint _num)
+        private
         onlyPlayer(sender)
         onlyNotRevealed(sender)
         onlyDuring(State.Reveal)
-        private
         returns (bool)
     {
         // check commit
-        require(keccak256(abi.encodePacked(_num)) == commits[sender]);
+        require(keccak256(abi.encodePacked(_num)) == commits[sender], "reveal does not match commit");
         reveals[sender] = _num;
         revealCount++;
         emit LogRevealed(sender, _num);

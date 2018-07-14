@@ -37,17 +37,17 @@ contract Controller is Ownable, Destructible {
     event LogWithdraw(address player, uint amount);
 
     modifier onlyDuring(LifeCycle _status) {
-        require(lifecycle == _status);
+        require(lifecycle == _status, "must match controller lifecycle status");
         _;
     }
 
     modifier onlyPlayer() {
-        require(players[msg.sender] != 0);
+        require(players[msg.sender] != 0, "sender must be player");
         _;
     }
 
     modifier rngReady() {
-        require(tools.random.state() == XRandom.State.Ready);
+        require(tools.random.state() == XRandom.State.Ready, "RNG must be ready");
         _;
     }
 
@@ -69,14 +69,14 @@ contract Controller is Ownable, Destructible {
     }
 
     function deposit()
+        external
+        payable
         onlyPlayer
         onlyDuring(LifeCycle.Depositing)
-        payable
-        external
     {
         // must send exact bet
-        require(msg.value == BET_AMOUNT);
-        require(!deposited[msg.sender]);
+        require(msg.value == BET_AMOUNT, "must send exact bet amount");
+        require(!deposited[msg.sender], "player must not have already deposited");
         deposited[msg.sender] = true;
         depositedCount++;
         if (depositedCount == playersArray.length) {
@@ -85,27 +85,27 @@ contract Controller is Ownable, Destructible {
     }
 
     function commit(bytes32 _hash)
-        onlyPlayer
         external
+        onlyPlayer
         returns (bool)
     {
-        require(tools.random.commit(msg.sender, _hash));
+        require(tools.random.commit(msg.sender, _hash), "RNG commit fails");
         return true;
     }
 
     function reveal(uint _num)
-        onlyPlayer
         external
+        onlyPlayer
         returns (bool)
     {
-        require(tools.random.reveal(msg.sender, _num));
+        require(tools.random.reveal(msg.sender, _num), "RNG reveal fails");
         return true;
     }
 
     function start()
+        external
         onlyDuring(LifeCycle.Starting)
         rngReady()
-        external
         returns (bool)
     {
         // init state from game library
@@ -115,10 +115,10 @@ contract Controller is Ownable, Destructible {
     }
 
     function play(bytes _action)
+        external
         onlyPlayer
         onlyDuring(LifeCycle.Playing)
         rngReady()
-        external
     {
         uint playerID = players[msg.sender];
         Connect.Input memory input = Connect.Input({
@@ -126,9 +126,9 @@ contract Controller is Ownable, Destructible {
             action: Connect.decodeAction(_action)
         });
         // check if legal
-        require(Connect.legal(state, info, input));
+        require(Connect.legal(state, info, input), "input is not legal");
         // game must not be in terminal state
-        require(Connect.terminal(state, info) == false);
+        require(Connect.terminal(state, info) == false, "game is already in terminal state");
         // update game state
         Connect.update(state, tools, info, input);
         // update control
@@ -138,11 +138,11 @@ contract Controller is Ownable, Destructible {
     }
 
     function end()
-        onlyDuring(LifeCycle.Playing)
         external
+        onlyDuring(LifeCycle.Playing)
     {
         // game ends in terminal state
-        require(Connect.terminal(state, info));
+        require(Connect.terminal(state, info), "game must be in terminal state");
         // calculate payout for each player
         uint playerPoints;
         for (uint i = 0; i < playersArray.length; i++) {
@@ -155,11 +155,11 @@ contract Controller is Ownable, Destructible {
     }
 
     function withdraw()
+        public
         onlyPlayer
         onlyDuring(LifeCycle.Withdrawing)
-        public
     {
-        require(points[msg.sender] > 0);
+        require(points[msg.sender] > 0, "player can only withdraw if player's score is not zero");
         uint sendAmount;
         if (totalPoints == 0) {
             sendAmount = BET_AMOUNT.div(playersArray.length);

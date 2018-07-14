@@ -13,7 +13,7 @@ library Util {
         public pure
         returns (uint)
     {
-        require(s.length == 32);
+        require(s.length == 32, "byte array must be exactly 32 bytes");
         uint x = 0;
         for (uint i = 0; i < 32; i++) {
             x = x | uint(s[31-i]) << i * 8;
@@ -32,7 +32,7 @@ library Util {
         public pure
         returns (uint, uint)
     {
-        require(s.length == 64);
+        require(s.length == 64, "byte array must be exactly 64 bytes");
         uint x = 0;
         uint y = 0;
         for (uint i = 0; i < 32; i++) {
@@ -53,7 +53,7 @@ library Util {
         public pure
         returns (uint, uint, uint)
     {
-        require(s.length == 96);
+        require(s.length == 96, "byte array must be exactly 96 bytes");
         uint x = 0;
         uint y = 0;
         uint z = 0;
