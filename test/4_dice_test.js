@@ -1,13 +1,14 @@
-import expectThrow from 'openzeppelin-solidity/test/helpers/expectThrow'
+import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
 import abi from 'ethereumjs-abi'
 import eutil from 'ethereumjs-util'
-import { createCommit } from './helpers/randHelper'
+import XRandomJS from './helpers/xrandom'
 
-const Controller = artifacts.require('./DiceController.sol')
+const Controller = artifacts.require('DiceController')
 
-const encodeActionABI = (roll) => eutil.bufferToHex(abi.rawEncode(['bool'], [roll]))
+const encodeActionABI = (roll) => eutil.bufferToHex(abi.rawEncode(['uint256'], [roll]))
+const createCommit = (v) => eutil.bufferToHex(XRandomJS.createCommit(v))
 
-contract('DiceGame + Controller + Connect', (accounts) => {
+contract('DiceGame', (accounts) => {
   let controller
   let encodeAction
   const [, player1, player2] = accounts
@@ -39,13 +40,13 @@ contract('DiceGame + Controller + Connect', (accounts) => {
     })
     it('should split the payout if match is a draw', async () => {
       const bet = await controller.BET_AMOUNT()
-      await controller.play(encodeAction(true), { from: player1 })
+      await controller.play(encodeAction(1), { from: player1 })
       await commitReveal(1337, 9001)
-      await controller.play(encodeAction(true), { from: player2 })
+      await controller.play(encodeAction(1), { from: player2 })
       await commitReveal(1337, 9001)
-      await controller.play(encodeAction(true), { from: player1 })
+      await controller.play(encodeAction(1), { from: player1 })
       await commitReveal(1337, 9001)
-      await controller.play(encodeAction(true), { from: player2 })
+      await controller.play(encodeAction(1), { from: player2 })
       await controller.end()
       const tx = await controller.withdraw({ from: player1 })
       assert.equal(tx.logs[0].event, 'LogWithdraw')
@@ -57,11 +58,11 @@ contract('DiceGame + Controller + Connect', (accounts) => {
       assert.equal(tx2.logs[0].args.amount.toString(), bet.toString())
     })
     it('should not allow withdraw before terminal state', async () => {
-      await controller.play(encodeAction(true), { from: player1 })
+      await controller.play(encodeAction(1), { from: player1 })
       await commitReveal(1337, 9001)
-      await controller.play(encodeAction(true), { from: player2 })
-      expectThrow(controller.end())
-      expectThrow(controller.withdraw({ from: player1 }))
+      await controller.play(encodeAction(1), { from: player2 })
+      await assertRevert(controller.end())
+      await assertRevert(controller.withdraw({ from: player1 }))
     })
   })
 })

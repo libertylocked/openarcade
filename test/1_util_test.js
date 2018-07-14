@@ -1,54 +1,46 @@
+import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
 import abi from 'ethereumjs-abi'
 import eutil from 'ethereumjs-util'
 
-const Util = artifacts.require('./Util.sol')
+const BytesUtilMock = artifacts.require('BytesUtilMock')
 
-contract('Util', () => {
+contract('BytesUtil', () => {
   let lib
-  before('get deployed lib instance', async () => {
-    lib = await Util.deployed()
+  before('deploy bytes util', async () => {
+    lib = await BytesUtilMock.new()
   })
-  describe('point 1D encoding', () => {
-    it('should encode a 1D point correctly', async () => {
-      const expected = eutil.bufferToHex(abi.rawEncode(['uint256'], [320]))
-      const res = await lib.encodePoint1D(320)
-      assert.equal(res, expected)
-    })
-    it('should decode a 1D point correctly', async () => {
-      const encoded = eutil.bufferToHex(abi.rawEncode(['uint256'], [320]))
-      const res = await lib.decodePoint1D(encoded)
+  describe('slice uint', () => {
+    it('should slice a uint from byte array starting at zero', async () => {
+      const bs = eutil.bufferToHex(abi.rawEncode(['uint256'], [320]))
+      const res = await lib.sliceUint(bs, 0)
       assert.equal(res.toNumber(), 320)
     })
-  })
-  describe('point 2D encoding', () => {
-    it('should encode a 2D point correctly', async () => {
-      const expected = eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [320, 640]))
-      const res = await lib.encodePoint2D(320, 640)
-      assert.equal(res, expected)
+    it('should slice a uint from byte array starting non zero', async () => {
+      const bs = eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [42, 1337]))
+      const res = await lib.sliceUint(bs, 32)
+      assert.equal(res.toNumber(), 1337)
     })
-    it('should decode a 2D point correctly', async () => {
-      const encoded = eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [320, 640]))
-      const res = await lib.decodePoint2D(encoded)
+    it('should throw if slicing out of range', async () => {
+      const bs = eutil.bufferToHex(abi.rawEncode(['uint256'], [320]))
+      await assertRevert(lib.sliceUint(bs, 32))
+    })
+  })
+  describe('slice uints', () => {
+    it('should slice an array of uints starting at zero', async () => {
+      const bs = eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256', 'uint256'], [320, 640, 1080]))
+      const res = await lib.sliceUints(bs, 0, 2)
+      assert.equal(res.length, 2)
       assert.equal(res[0].toNumber(), 320)
       assert.equal(res[1].toNumber(), 640)
     })
-  })
-  describe('point 3D encoding', () => {
-    it('should encode a 3D point correctly', async () => {
-      const expected = eutil.bufferToHex(
-        abi.rawEncode(['uint256', 'uint256', 'uint256'], [320, 640, 960])
-      )
-      const res = await lib.encodePoint3D(320, 640, 960)
-      assert.equal(res, expected)
-    })
-    it('should decode a 3D point correctly', async () => {
-      const encoded = eutil.bufferToHex(
-        abi.rawEncode(['uint256', 'uint256', 'uint256'], [320, 640, 960])
-      )
-      const res = await lib.decodePoint3D(encoded)
-      assert.equal(res[0].toNumber(), 320)
-      assert.equal(res[1].toNumber(), 640)
-      assert.equal(res[2].toNumber(), 960)
+    it('should slice an array of uints starting at non zero', async () => {
+      const bs = eutil.bufferToHex(
+        abi.rawEncode(['uint256', 'uint256', 'uint256', 'uint256'], [320, 640, 1080, 2160]))
+      const res = await lib.sliceUints(bs, 32, 3)
+      assert.equal(res.length, 3)
+      assert.equal(res[0].toNumber(), 640)
+      assert.equal(res[1].toNumber(), 1080)
+      assert.equal(res[2].toNumber(), 2160)
     })
   })
 })

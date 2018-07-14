@@ -1,15 +1,16 @@
-import expectThrow from 'openzeppelin-solidity/test/helpers/expectThrow'
+import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
 import abi from 'ethereumjs-abi'
 import eutil from 'ethereumjs-util'
-import { createCommit } from './helpers/randHelper'
+import XRandomJS from './helpers/xrandom'
 
-// const Game = artifacts.require('./TTTGame.sol');
-const Controller = artifacts.require('./Controller.sol')
+// const Game = artifacts.require('TTTGame');
+const Controller = artifacts.require('Controller')
 
 // const newActionEncoder = (lib) => (...args) => lib.encodeAction.call(...args)
 const encodeActionABI = (x, y) => eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [x, y]))
+const createCommit = (v) => eutil.bufferToHex(XRandomJS.createCommit(v))
 
-contract('TTTGame + Controller + Connect', (accounts) => {
+contract('TTTGame + Controller', (accounts) => {
   let controller
   let encodeAction
   const [, player1, player2] = accounts
@@ -86,12 +87,12 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       assert.equal(tx.logs[0].args.player, player1)
     })
     it('should not allow player who does not have control to play', async () => {
-      await expectThrow(controller.play(encodeAction(0, 0), { from: player2 }))
+      await assertRevert(controller.play(encodeAction(0, 0), { from: player2 }))
     })
     it('control should alternate', async () => {
       await controller.play(encodeAction(0, 0), { from: player1 })
       assert.equal(await controller.control(), 2)
-      await expectThrow(controller.play(encodeAction(0, 1), { from: player1 }))
+      await assertRevert(controller.play(encodeAction(0, 1), { from: player1 }))
     })
   })
   describe('withdraw', () => {
@@ -150,8 +151,8 @@ contract('TTTGame + Controller + Connect', (accounts) => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
       await controller.play(encodeAction(0, 0), { from: player1 })
-      expectThrow(controller.end())
-      expectThrow(controller.withdraw({ from: player1 }))
+      await assertRevert(controller.end())
+      await assertRevert(controller.withdraw({ from: player1 }))
     })
   })
 })

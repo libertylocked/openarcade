@@ -1,10 +1,10 @@
-const Util = artifacts.require('./Util.sol')
-const Controller = artifacts.require('./Controller.sol')
-const Game = artifacts.require('./TTTGame.sol')
+const BytesUtil = artifacts.require('BytesUtil')
+const Controller = artifacts.require('Controller')
+const Game = artifacts.require('TTTGame')
 
 module.exports = (deployer, network, accounts) => {
-  deployer.deploy(Util)
-  deployer.link(Util, [Game, Controller])
+  deployer.deploy(BytesUtil)
+  deployer.link(BytesUtil, [Game, Controller])
   deployer.deploy(Game)
   deployer.link(Game, Controller)
 }

@@ -1,13 +1,16 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Util.sol";
+import "./util/BytesUtil.sol";
 import "./Connect.sol";
 
 
 // TTTGame is the Tic Tac Toe game library
 // Note: pid (player ID) is always non zero.
 library TTTGame {
+    using SafeMath for uint256;
+    using BytesUtil for bytes;
+
     struct State {
         // In TTT, we define the state as simply a mapping which is the board.
         // It's a flattened 2D array
@@ -38,7 +41,7 @@ library TTTGame {
     {
         // start the game with control setting to random
         // since player ID starts at 0, for a 2 player game it would be 1 or 2
-        uint initialControl = 1 + tools.random.next() % playerCount;
+        uint initialControl = (tools.random.next() % playerCount).add(1);
         // since all cells are initialized to zero, no state modification is needed
         return initialControl;
     }
@@ -48,7 +51,7 @@ library TTTGame {
         returns (uint)
     {
         // In TTT simply alternate
-        return 1 + info.control % info.playerCount;
+        return (info.control % info.playerCount).add(1);
     }
 
     function update(State storage state, Connect.Tools storage tools, Connect.Info storage info, Connect.Input memory input)
@@ -114,12 +117,10 @@ library TTTGame {
         internal pure
         returns (Action)
     {
-        uint x = 0;
-        uint y = 0;
-        (x, y) = Util.decodePoint2D(s);
+        uint[] memory res = s.sliceUints(0, 2);
         return Action({
-            x: x,
-            y: y
+            x: res[0],
+            y: res[1]
         });
     }
 
@@ -133,7 +134,7 @@ library TTTGame {
         external pure
         returns (bytes)
     {
-        return Util.encodePoint2D(x, y);
+        return abi.encode(x, y);
     }
 
     /* Private functions */

@@ -10,7 +10,7 @@
     "lint": "npm run lint:sol && npm run lint:js",
     "prebuild": "node scripts/prebuild.js",
     "compile": "npm run prebuild && truffle compile",
-    "migrate": "truffle migrate",
+    "migrate": "npm run prebuild && truffle migrate",
     "test": "truffle test",
     "coverage": "solidity-coverage",
     "prepare": "npm run prebuild"

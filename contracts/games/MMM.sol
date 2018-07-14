@@ -1,12 +1,15 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../Util.sol";
+import "../util/BytesUtil.sol";
 import { MMMConnect as Connect } from "../.generated/MMMConnect.sol";
 
 
 // MMM is the Mau Mau Minus game library
 library MMM {
+    using SafeMath for uint256;
+    using BytesUtil for bytes;
+
     struct State {
         uint[] deck;
         uint prevSuit;
@@ -138,12 +141,10 @@ library MMM {
         internal pure
         returns (Action)
     {
-        uint x = 0;
-        uint y = 0;
-        (x, y) = Util.decodePoint2D(s);
+        uint[] memory res = s.sliceUints(0, 2);
         return Action({
-            card: x,
-            drawOrSkip: y
+            card: res[0],
+            drawOrSkip: res[1]
         });
     }
 
@@ -153,7 +154,7 @@ library MMM {
         external pure
         returns (bytes)
     {
-        return Util.encodePoint2D(x, y);
+        return abi.encode(x, y);
     }
 
     /* Private functions */
