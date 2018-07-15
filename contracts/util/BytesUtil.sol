@@ -78,12 +78,4 @@ library BytesUtil {
         require(bs.length % 32 == 0, "buffer size must be multiple of 32");
         return sliceUintArray(bs, 0, bs.length / 32);
     }
-
-    function sliceString(bytes bs, uint start, uint length)
-        internal pure
-        returns (string)
-    {
-        bytes memory subarr = slice(bs, start, length);
-        return string(subarr);
-    }
 }
