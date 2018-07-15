@@ -1,14 +1,14 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./access/Relayable.sol";
 
 
 // Random number generator using commit-reveal.
 // Numbers are computed from XOR-keccak256 from the seed
 // This contract should be deployed by a controller. The controller
 //  who is the owner serves as a relay to call commit/reveal
-contract XRandom is Ownable {
-    address public relayer;
+contract XRandom is Ownable, Relayable {
     mapping(address => bool) public players;
     address[] public playersArray;
     mapping(address => bytes32) public commits;
@@ -36,11 +36,6 @@ contract XRandom is Ownable {
         _;
     }
 
-    modifier onlyRelayer {
-        require(msg.sender == relayer, "sender must be relayer");
-        _;
-    }
-
     modifier onlyNotCommitted(address sender) {
         require(commits[sender] == 0, "player must not have already committed");
         _;
@@ -56,12 +51,14 @@ contract XRandom is Ownable {
         _;
     }
 
-    constructor(address[] _players, address _relayer) public {
+    constructor(address[] _players, address _relayer)
+        public
+        Relayable(_relayer)
+    {
         for (uint i = 0; i < _players.length; i++) {
             players[_players[i]] = true;
         }
         playersArray = _players;
-        relayer = _relayer;
         state = State.Commit;
     }
 
