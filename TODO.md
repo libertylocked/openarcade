@@ -12,3 +12,6 @@
     - Game calls `rng.refresh()` to request seed update
 - Init parameters
   - Passing some optional init params into game lib's `init`
+- Maybe split this meta repo into different packages. Need to update those packages when project is done. Also maybe change project's dependencies to just use those.
+  - solidity-bytesutil
+  - eth-xrandom
