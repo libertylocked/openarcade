@@ -18,9 +18,14 @@ library BytesUtil {
         if (length == 0) {
             return new bytes(0);
         }
+        uint wordCount = 1 + (length - 1) / 32;
+        uint wi = 0;
         bytes memory sliced = new bytes(length);
-        assembly {
-            calldatacopy(add(sliced, 0x20), add(0x84, start), length)
+        for (wi = 0; wi < wordCount; wi++) {
+            assembly {
+                let word := mload(add(bs, add(add(0x20, start), mul(wi, 0x20))))
+                mstore(add(sliced, add(0x20, mul(wi, 0x20))), word)
+            }
         }
         return sliced;
     }
