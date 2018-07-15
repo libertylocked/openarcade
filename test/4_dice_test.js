@@ -24,7 +24,7 @@ contract('DiceGame', (accounts) => {
   beforeEach('deploy a new Controller', async () => {
     controller = await Controller.new([player1, player2])
   })
-  describe('withdraw', () => {
+  describe('play and withdraw', () => {
     beforeEach('setup game', async () => {
       const bet = await controller.BET_AMOUNT()
       await controller.deposit({
