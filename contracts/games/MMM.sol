@@ -141,7 +141,7 @@ library MMM {
         internal pure
         returns (Action)
     {
-        uint[] memory res = s.sliceUints(0, 2);
+        uint[] memory res = s.sliceUintArray(0, 2);
         return Action({
             card: res[0],
             drawOrSkip: res[1]

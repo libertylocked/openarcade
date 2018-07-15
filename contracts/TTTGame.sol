@@ -117,7 +117,7 @@ library TTTGame {
         internal pure
         returns (Action)
     {
-        uint[] memory res = s.sliceUints(0, 2);
+        uint[] memory res = s.sliceUintArray(0, 2);
         return Action({
             x: res[0],
             y: res[1]
