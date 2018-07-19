@@ -26,8 +26,8 @@ const generateConnect = (connectTmpl, gameName) => {
     `import { TTTGame as Game } from "./TTTGame.sol";`,
     `import { ${gameName} as Game } from "../${GAMES_FOLDER}/${gameName}.sol";`
   ).replace(
-    'import "./XRandom.sol";',
-    'import "../XRandom.sol";'
+    'import "./random/RXRandom.sol";',
+    'import "../random/RXRandom.sol";'
   ).replace(
     'library Connect',
     `library ${gameName}Connect`
@@ -40,8 +40,8 @@ const generateController = (controllerTmpl, gameName) => {
     'import "./Connect.sol";',
     `import { ${gameName}Connect as Connect } from "./${gameName}Connect.sol";`
   ).replace(
-    'import "./XRandom.sol";',
-    'import "../XRandom.sol";'
+    'import "./random/RXRandom.sol";',
+    'import "../random/RXRandom.sol";'
   ).replace(
     'import "./TTTGame.sol";',
     `import { ${gameName} as Game } from "../${GAMES_FOLDER}/${gameName}.sol";`

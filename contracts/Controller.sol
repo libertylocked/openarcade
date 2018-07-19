@@ -3,9 +3,9 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
+import "./random/RXRandom.sol";
 import "./Connect.sol";
 import "./TTTGame.sol";
-import "./XRandom.sol";
 
 
 contract Controller is Ownable, Destructible {
@@ -47,7 +47,7 @@ contract Controller is Ownable, Destructible {
     }
 
     modifier rngReady() {
-        require(tools.random.state() == XRandom.State.Ready, "RNG must be ready");
+        require(tools.random.state() == RXRandom.State.Ready, "RNG must be ready");
         _;
     }
 
@@ -62,7 +62,7 @@ contract Controller is Ownable, Destructible {
         });
         // create RNG contract
         tools = Connect.Tools({
-            random: new XRandom(_players, address(this))
+            random: new RXRandom(_players, address(this))
         });
         // start in depositing stage
         lifecycle = LifeCycle.Depositing;
@@ -84,21 +84,21 @@ contract Controller is Ownable, Destructible {
         }
     }
 
-    function commit(bytes32 _hash)
+    function commit(bytes32 inputHash)
         external
         onlyPlayer
         returns (bool)
     {
-        require(tools.random.commit(msg.sender, _hash), "RNG commit fails");
+        require(tools.random.commit(msg.sender, inputHash), "RNG commit fails");
         return true;
     }
 
-    function reveal(uint _num)
+    function revealAndCommit(uint input, bytes32 inputHash)
         external
         onlyPlayer
         returns (bool)
     {
-        require(tools.random.reveal(msg.sender, _num), "RNG reveal fails");
+        require(tools.random.revealAndCommit(msg.sender, input, inputHash), "RNG reveal fails");
         return true;
     }
 

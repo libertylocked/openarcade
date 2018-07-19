@@ -6,11 +6,11 @@ const XRandom = artifacts.require('XRandom')
 
 const [owner, alice, bob, carol, david] = web3.eth.accounts
 const aliceNum = 42
-const aliceCommit = eutil.bufferToHex(XRandomJS.createCommit(aliceNum))
+const aliceCommit = eutil.bufferToHex(XRandomJS.newCommit(aliceNum))
 const bobNum = 1337
-const bobCommit = eutil.bufferToHex(XRandomJS.createCommit(bobNum))
+const bobCommit = eutil.bufferToHex(XRandomJS.newCommit(bobNum))
 const carolNum = 97
-const carolCommit = eutil.bufferToHex(XRandomJS.createCommit(carolNum))
+const carolCommit = eutil.bufferToHex(XRandomJS.newCommit(carolNum))
 
 contract('XRandom', () => {
   let instance

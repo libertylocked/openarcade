@@ -13,7 +13,6 @@ library Dice {
     struct State {
         uint roundsLeft;
         mapping(uint=>uint) score;
-        bool resettingRng;
     }
 
     struct Action {
@@ -51,8 +50,9 @@ library Dice {
             uint roll = (tools.random.next() % 6).add(1);
             emit LogRoll(input.pid, roll);
             state.score[input.pid] = prevScore.add(roll);
-            // reset the RNG so next time we'll get fresh randomness
-            tools.random.reset();
+            // Request new randomness for the next round
+            // XXX this means player is able to see the seed before input is sent
+            tools.random.request();
         }
         // if we are at the last player in current round, go to next round
         if (input.pid == info.playerCount) {

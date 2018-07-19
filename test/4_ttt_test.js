@@ -8,7 +8,7 @@ const Controller = artifacts.require('Controller')
 
 // const newActionEncoder = (lib) => (...args) => lib.encodeAction.call(...args)
 const encodeActionABI = (x, y) => eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [x, y]))
-const createCommit = (v) => eutil.bufferToHex(XRandomJS.createCommit(v))
+const newCommit = (v) => eutil.bufferToHex(XRandomJS.newCommit(v))
 
 contract('TTTGame + Controller', (accounts) => {
   let controller
@@ -42,10 +42,10 @@ contract('TTTGame + Controller', (accounts) => {
       })
     })
     it('should let player 1 go first if random number is even', async () => {
-      await controller.commit(createCommit(1337), { from: player1 })
-      await controller.commit(createCommit(9001), { from: player2 })
-      await controller.reveal(1337, { from: player1 })
-      await controller.reveal(9001, { from: player2 })
+      await controller.commit(newCommit(1337), { from: player1 })
+      await controller.commit(newCommit(9001), { from: player2 })
+      await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
+      await controller.revealAndCommit(9001, newCommit(9002), { from: player2 })
       await controller.start()
       // the 1st number: sha3(1337 xor 9001) is
       // 0x4e66df4bdd547b751802471b8578ff25842645c69676a953cff51ab97f0006e6
@@ -53,10 +53,10 @@ contract('TTTGame + Controller', (accounts) => {
       assert.equal(await controller.control(), 1)
     })
     it('should let player 2 go first if random number is odd', async () => {
-      await controller.commit(createCommit(1337), { from: player1 })
-      await controller.commit(createCommit(9002), { from: player2 })
-      await controller.reveal(1337, { from: player1 })
-      await controller.reveal(9002, { from: player2 })
+      await controller.commit(newCommit(1337), { from: player1 })
+      await controller.commit(newCommit(9002), { from: player2 })
+      await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
+      await controller.revealAndCommit(9002, newCommit(9002), { from: player2 })
       await controller.start()
       // the 1st number: sha3(1337 xor 9002) is
       // 0xd93d05651913279338de2ec0ab00dc6a13dc8c75c48a9de906cdc7712b825875
@@ -75,10 +75,10 @@ contract('TTTGame + Controller', (accounts) => {
         from: player2,
         value: bet
       })
-      await controller.commit(createCommit(1337), { from: player1 })
-      await controller.commit(createCommit(9001), { from: player2 })
-      await controller.reveal(1337, { from: player1 })
-      await controller.reveal(9001, { from: player2 })
+      await controller.commit(newCommit(1337), { from: player1 })
+      await controller.commit(newCommit(9001), { from: player2 })
+      await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
+      await controller.revealAndCommit(9001, newCommit(1338), { from: player2 })
       await controller.start()
     })
     it('should only allow player who has control to play', async () => {
@@ -106,10 +106,10 @@ contract('TTTGame + Controller', (accounts) => {
         from: player2,
         value: bet
       })
-      await controller.commit(createCommit(1337), { from: player1 })
-      await controller.commit(createCommit(9001), { from: player2 })
-      await controller.reveal(1337, { from: player1 })
-      await controller.reveal(9001, { from: player2 })
+      await controller.commit(newCommit(1337), { from: player1 })
+      await controller.commit(newCommit(9001), { from: player2 })
+      await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
+      await controller.revealAndCommit(9001, newCommit(9002), { from: player2 })
       await controller.start()
     })
     it('should pay player 1 when player 1 wins', async () => {

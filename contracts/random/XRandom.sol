@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "./access/Relayable.sol";
+import "../access/Relayable.sol";
 
 
 // Random number generator using commit-reveal.
@@ -163,7 +163,7 @@ contract XRandom is Ownable, Relayable {
     {
         // the commit can't be zero or hashed zero
         require(_hash != 0, "commit cannot be zero");
-        require(_hash != keccak256(abi.encodePacked(uint(0))), "commit cannot be a hashed zero");
+        require(_hash != keccak256(abi.encodePacked(uint(0))), "commit cannot be hashed zero");
         commits[sender] = _hash;
         commitCount++;
         emit LogCommitted(sender, _hash);

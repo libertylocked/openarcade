@@ -58,7 +58,7 @@ XRandom.toBignum = (v) => {
   }
 }
 
-XRandom.createCommit = (v) => eutil.keccak256(eutil.setLengthLeft(v, 32))
+XRandom.newCommit = (v) => eutil.keccak256(eutil.setLengthLeft(v, 32))
 XRandom.validateReveal = (c, v) => eutil.keccak256(v).equals(c)
 
 module.exports = XRandom
