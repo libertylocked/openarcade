@@ -14,7 +14,7 @@ library TTTGame {
     struct State {
         // In TTT, we define the state as simply a mapping which is the board.
         // It's a flattened 2D array
-        mapping(bytes32=>Cell) board;
+        Cell[9] board;
     }
 
     struct Action {
@@ -150,9 +150,9 @@ library TTTGame {
 
     function encodeSelector(uint x, uint y)
         private pure
-        returns (bytes32)
+        returns (uint)
     {
-        return keccak256(abi.encodePacked(x, y));
+        return x + y * 3;
     }
 
     function checkWinner(State storage state)
@@ -166,13 +166,13 @@ library TTTGame {
             uint rowWinner = state.board[encodeSelector(0, i)].pid;
             for (uint j = 1; j < 3; j++) {
                 if (colWinner != 0) {
-                    bytes32 colSelect = encodeSelector(i, j);
+                    uint colSelect = encodeSelector(i, j);
                     if (state.board[colSelect].pid != colWinner) {
                         colWinner = 0;
                     }
                 }
                 if (rowWinner != 0) {
-                    bytes32 rowSelect = encodeSelector(j, i);
+                    uint rowSelect = encodeSelector(j, i);
                     if (state.board[rowSelect].pid != rowWinner) {
                         rowWinner = 0;
                     }
@@ -189,13 +189,13 @@ library TTTGame {
         uint rtlWinner = state.board[encodeSelector(2, 0)].pid;
         for (i = 1; i < 3; i++) {
             if (ltrWinner != 0) {
-                bytes32 ltrSelect = encodeSelector(i, i);
+                uint ltrSelect = encodeSelector(i, i);
                 if (state.board[ltrSelect].pid != ltrWinner) {
                     ltrWinner = 0;
                 }
             }
             if (rtlWinner != 0) {
-                bytes32 rtlSelect = encodeSelector(2-i, i);
+                uint rtlSelect = encodeSelector(2-i, i);
                 if (state.board[rtlSelect].pid != rtlWinner) {
                     rtlWinner = 0;
                 }
