@@ -21,7 +21,7 @@ OpenArcade is a game engine for turn based games on Ethereum.
 - Run `npm run compile`
 - Write some tests! You can require your game controller like this in tests
 ```javascript
-const Controller = artifacts.require('DiceController')
+const Controller = artifacts.require('MyGameController')
 ```
 - Put the tests in `test` folder
 - Run `npm run test`
