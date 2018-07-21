@@ -73,13 +73,4 @@ library Starter {
         // TODO
         return Action();
     }
-
-    /* External functions */
-
-    function encodeAction(bool play)
-        external pure
-        returns (bytes)
-    {
-        return abi.encode(play);
-    }
 }
