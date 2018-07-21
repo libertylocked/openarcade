@@ -35,7 +35,9 @@ library TTTGame {
     // All internal functions must be defined with the exact function
     //  signatures.
 
-    function init(State storage state, Connect.Tools storage tools, uint playerCount)
+    function init(
+        State storage /*state*/, Connect.Tools storage tools,
+        uint playerCount, bytes /*initParams*/)
         internal
         returns (uint)
     {
@@ -46,7 +48,7 @@ library TTTGame {
         return initialControl;
     }
 
-    function next(State storage state, Connect.Info storage info)
+    function next(State storage /*state*/, Connect.Info storage info)
         internal view
         returns (uint)
     {
@@ -54,7 +56,9 @@ library TTTGame {
         return (info.control % info.playerCount).add(1);
     }
 
-    function update(State storage state, Connect.Tools storage tools, Connect.Info storage info, Connect.Input memory input)
+    function update(
+        State storage state, Connect.Tools storage /*tools*/,
+        Connect.Info storage /*info*/, Connect.Input memory input)
         internal
     {
         // in TTT only one cell is updated
@@ -62,7 +66,9 @@ library TTTGame {
         state.board[encodeSelector(action.x, action.y)].pid = input.pid;
     }
 
-    function legal(State storage state, Connect.Info storage info, Connect.Input memory input)
+    function legal(
+        State storage state, Connect.Info storage info,
+        Connect.Input memory input)
         internal view
         returns (bool)
     {
@@ -83,7 +89,7 @@ library TTTGame {
         return true;
     }
 
-    function terminal(State storage state, Connect.Info storage info)
+    function terminal(State storage state, Connect.Info storage /*info*/)
         internal view
         returns (bool)
     {
@@ -97,7 +103,9 @@ library TTTGame {
         return false;
     }
 
-    function goal(State storage state, Connect.Info storage info, uint pid)
+    function goal(
+        State storage state, Connect.Info storage /*info*/,
+        uint pid)
         internal view
         returns (uint)
     {

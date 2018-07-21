@@ -25,13 +25,13 @@ library MMM {
 
     /* Internal functions */
 
-    function init(State storage state, Connect.Tools storage tools, uint playerCount)
+    function init(
+        State storage state, Connect.Tools storage tools,
+        uint playerCount, bytes /*initParams*/)
         internal
         returns (uint)
     {
-
         state.cardCount = playerCountToCardCount(playerCount);
-
         state.stack = new uint[](state.cardCount);
         state.deck = new uint[](state.cardCount);
 
@@ -57,7 +57,7 @@ library MMM {
         return initialControl;
     }
 
-    function next(State storage state, Connect.Info storage info)
+    function next(State storage /*state*/, Connect.Info storage info)
         internal view
         returns (uint)
     {
@@ -65,7 +65,9 @@ library MMM {
         return 1 + info.control % info.playerCount;
     }
 
-    function update(State storage state, Connect.Tools storage tools, Connect.Info storage info, Connect.Input memory input)
+    function update(
+        State storage state, Connect.Tools storage tools,
+        Connect.Info storage /*info*/, Connect.Input memory input)
         internal
     {
         // in MMM only one cell is updated
@@ -81,7 +83,9 @@ library MMM {
         }
     }
 
-    function legal(State storage state, Connect.Info storage info, Connect.Input memory input)
+    function legal(
+        State storage state, Connect.Info storage info,
+        Connect.Input memory input)
         internal view
         returns (bool)
     {
@@ -92,7 +96,8 @@ library MMM {
 
         // xy must not be out of range
         if (input.action.card < 0 || input.action.card >= state.deck.length) {
-            if (input.action.drawOrSkip == 2 || (input.action.drawOrSkip == 1 && state.cardCount > 0)) {
+            if (input.action.drawOrSkip == 2 ||
+                (input.action.drawOrSkip == 1 && state.cardCount > 0)) {
                 return true;
             }
             return false;
@@ -203,7 +208,8 @@ library MMM {
             uint value = 0;
             (suit, value) = decodeCard(card);
             if (state.deck[card] == pid) {
-                if (normalizeSuit(suit) == state.prevSuit || value == state.prevValue) {
+                if (normalizeSuit(suit) == state.prevSuit ||
+                    value == state.prevValue) {
                     return true;
                 }
             }
@@ -212,7 +218,8 @@ library MMM {
         return false;
     }
 
-    function nobodyHasCardToPlay(State storage state, Connect.Info storage info)
+    function nobodyHasCardToPlay(
+        State storage state, Connect.Info storage info)
         private view
         returns (bool)
     {

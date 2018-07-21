@@ -46,7 +46,7 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.commit(newCommit(9001), { from: player2 })
       await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
       await controller.revealAndCommit(9001, newCommit(9002), { from: player2 })
-      await controller.start()
+      await controller.start(0)
       // the 1st number: sha3(1337 xor 9001) is
       // 0x4e66df4bdd547b751802471b8578ff25842645c69676a953cff51ab97f0006e6
       // player 1 should go first
@@ -57,7 +57,7 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.commit(newCommit(9002), { from: player2 })
       await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
       await controller.revealAndCommit(9002, newCommit(9002), { from: player2 })
-      await controller.start()
+      await controller.start(0)
       // the 1st number: sha3(1337 xor 9002) is
       // 0xd93d05651913279338de2ec0ab00dc6a13dc8c75c48a9de906cdc7712b825875
       // player 2 should go first
@@ -79,7 +79,7 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.commit(newCommit(9001), { from: player2 })
       await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
       await controller.revealAndCommit(9001, newCommit(1338), { from: player2 })
-      await controller.start()
+      await controller.start(0)
     })
     it('should only allow player who has control to play', async () => {
       const tx = await controller.play(encodeAction(0, 0), { from: player1 })
@@ -110,7 +110,7 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.commit(newCommit(9001), { from: player2 })
       await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
       await controller.revealAndCommit(9001, newCommit(9002), { from: player2 })
-      await controller.start()
+      await controller.start(0)
     })
     it('should pay player 1 when player 1 wins', async () => {
       const bet = await controller.BET_AMOUNT()

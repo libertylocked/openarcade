@@ -35,7 +35,7 @@ contract('DiceGame', (accounts) => {
       await controller.commit(newCommit(bobNum1), { from: bob })
       await controller.revealAndCommit(aliceNum1, newCommit(aliceNum1 + 1), { from: alice })
       await controller.revealAndCommit(bobNum1, newCommit(bobNum1 + 1), { from: bob })
-      await controller.start()
+      await controller.start(0)
     })
     it('should split the payout based on score', async () => {
       await controller.play(encodeAction(1), { from: alice })

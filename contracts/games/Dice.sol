@@ -24,7 +24,9 @@ library Dice {
 
     /* Internal functions */
 
-    function init(State storage state, Connect.Tools storage tools, uint playerCount)
+    function init(
+        State storage state, Connect.Tools storage /*tools*/,
+        uint /*playerCount*/, bytes /*initParams*/)
         internal
         returns (uint)
     {
@@ -34,14 +36,16 @@ library Dice {
         return 1;
     }
 
-    function next(State storage state, Connect.Info storage info)
+    function next(State storage /*state*/, Connect.Info storage info)
         internal view
         returns (uint)
     {
         return (info.control % info.playerCount).add(1);
     }
 
-    function update(State storage state, Connect.Tools storage tools, Connect.Info storage info, Connect.Input memory input)
+    function update(
+        State storage state, Connect.Tools storage tools,
+        Connect.Info storage info, Connect.Input memory input)
         internal
     {
         // it's guaranteed that update will be executed when RNG is in ready state
@@ -60,7 +64,9 @@ library Dice {
         }
     }
 
-    function legal(State storage state, Connect.Info storage info, Connect.Input memory input)
+    function legal(
+        State storage /*state*/, Connect.Info storage info,
+        Connect.Input memory input)
         internal view
         returns (bool)
     {
@@ -71,14 +77,16 @@ library Dice {
         return true;
     }
 
-    function terminal(State storage state, Connect.Info storage info)
+    function terminal(
+        State storage state, Connect.Info storage /*info*/)
         internal view
         returns (bool)
     {
         return state.roundsLeft == 0;
     }
 
-    function goal(State storage state, Connect.Info storage info, uint pid)
+    function goal(
+        State storage state, Connect.Info storage /*info*/, uint pid)
         internal view
         returns (uint)
     {

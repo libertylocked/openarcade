@@ -37,7 +37,10 @@ contract Controller is Ownable, Destructible {
     event LogWithdraw(address player, uint amount);
 
     modifier onlyDuring(LifeCycle _status) {
-        require(lifecycle == _status, "must match controller lifecycle status");
+        require(
+            lifecycle == _status,
+            "must match controller lifecycle status"
+        );
         _;
     }
 
@@ -47,7 +50,10 @@ contract Controller is Ownable, Destructible {
     }
 
     modifier rngReady() {
-        require(tools.random.state() == RXRandom.State.Ready, "RNG must be ready");
+        require(
+            tools.random.state() == RXRandom.State.Ready,
+            "RNG must be ready"
+        );
         _;
     }
 
@@ -76,7 +82,10 @@ contract Controller is Ownable, Destructible {
     {
         // must send exact bet
         require(msg.value == BET_AMOUNT, "must send exact bet amount");
-        require(!deposited[msg.sender], "player must not have already deposited");
+        require(
+            !deposited[msg.sender],
+            "player must not have already deposited"
+        );
         deposited[msg.sender] = true;
         depositedCount++;
         if (depositedCount == playersArray.length) {
@@ -89,7 +98,10 @@ contract Controller is Ownable, Destructible {
         onlyPlayer
         returns (bool)
     {
-        require(tools.random.commit(msg.sender, inputHash), "RNG commit fails");
+        require(
+            tools.random.commit(msg.sender, inputHash),
+            "RNG commit fail"
+        );
         return true;
     }
 
@@ -98,11 +110,14 @@ contract Controller is Ownable, Destructible {
         onlyPlayer
         returns (bool)
     {
-        require(tools.random.revealAndCommit(msg.sender, input, inputHash), "RNG reveal fails");
+        require(
+            tools.random.revealAndCommit(msg.sender, input, inputHash),
+            "RNG reveal fails"
+        );
         return true;
     }
 
-    function start()
+    function start(bytes initParams)
         external
         onlyDuring(LifeCycle.Starting)
         rngReady()
@@ -110,7 +125,10 @@ contract Controller is Ownable, Destructible {
     {
         // init state from game library
         // set state and game info
-        info.control = Connect.init(state, tools, playersArray.length);
+        info.control = Connect.init(
+            state, tools, playersArray.length,
+            initParams
+        );
         lifecycle = LifeCycle.Playing;
     }
 
@@ -126,9 +144,15 @@ contract Controller is Ownable, Destructible {
             action: Connect.decodeAction(_action)
         });
         // check if legal
-        require(Connect.legal(state, info, input), "input is not legal");
+        require(
+            Connect.legal(state, info, input),
+            "input is not legal"
+        );
         // game must not be in terminal state
-        require(Connect.terminal(state, info) == false, "game is already in terminal state");
+        require(
+            Connect.terminal(state, info) == false,
+            "game is already in terminal state"
+        );
         // update game state
         Connect.update(state, tools, info, input);
         // update control
@@ -142,13 +166,16 @@ contract Controller is Ownable, Destructible {
         onlyDuring(LifeCycle.Playing)
     {
         // game ends in terminal state
-        require(Connect.terminal(state, info), "game must be in terminal state");
+        require(
+            Connect.terminal(state, info),
+            "game must be in terminal state"
+        );
         // calculate payout for each player
-        uint playerPoints;
+        uint ppoints;
         for (uint i = 0; i < playersArray.length; i++) {
-            playerPoints = Connect.goal(state, info, players[playersArray[i]]);
-            points[playersArray[i]] = playerPoints;
-            totalPoints = totalPoints.add(playerPoints);
+            ppoints = Connect.goal(state, info, players[playersArray[i]]);
+            points[playersArray[i]] = ppoints;
+            totalPoints = totalPoints.add(ppoints);
         }
         // advance state
         lifecycle = LifeCycle.Withdrawing;
@@ -159,7 +186,10 @@ contract Controller is Ownable, Destructible {
         onlyPlayer
         onlyDuring(LifeCycle.Withdrawing)
     {
-        require(points[msg.sender] > 0, "player can only withdraw if player's score is not zero");
+        require(
+            points[msg.sender] > 0,
+            "player can only withdraw if player's score is not zero"
+        );
         uint sendAmount;
         if (totalPoints == 0) {
             sendAmount = BET_AMOUNT.div(playersArray.length);

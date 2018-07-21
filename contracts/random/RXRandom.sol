@@ -45,17 +45,26 @@ contract RXRandom is Ownable, Relayable {
     event LogRandomGenerated(uint seed, uint index, uint number);
 
     modifier onlyPlayer(address sender) {
-        require(players[sender], "sender must be player or relayed from player");
+        require(
+            players[sender],
+            "sender must be player or relayed from player"
+        );
         _;
     }
 
     modifier onlyNotCommitted(address sender) {
-        require(commits[sender] == 0, "player must not have already committed");
+        require(
+            commits[sender] == 0,
+            "player must not have already committed"
+        );
         _;
     }
 
     modifier onlyNotRevealed(address sender) {
-        require(reveals[sender] == 0, "player must not have already revealed");
+        require(
+            reveals[sender] == 0,
+            "player must not have already revealed"
+        );
         _;
     }
 
@@ -189,7 +198,10 @@ contract RXRandom is Ownable, Relayable {
     {
         // the commit can't be zero or hashed zero
         require(_hash != 0, "commit cannot be zero");
-        require(_hash != keccak256(abi.encodePacked(uint(0))), "commit cannot be hashed zero");
+        require(
+            _hash != keccak256(abi.encodePacked(uint(0))),
+            "commit cannot be hashed zero"
+        );
         commits[sender] = _hash;
         reveals[sender] = 0; // once committed, reveal is no longer valid
         emit LogCommitted(sender, _hash);
@@ -201,9 +213,13 @@ contract RXRandom is Ownable, Relayable {
         onlyNotRevealed(sender)
     {
         // check commit
-        require(keccak256(abi.encodePacked(_num)) == commits[sender], "reveal does not match commit");
+        require(
+            keccak256(abi.encodePacked(_num)) == commits[sender],
+            "reveal does not match commit"
+        );
         reveals[sender] = _num;
-        commits[sender] = bytes32(0); // once revealed, commit is no longer valid
+        // once revealed, commit is no longer valid
+        commits[sender] = bytes32(0);
         emit LogRevealed(sender, _num);
         // reveal always updates the seed
         mUpdateSeed(_num);

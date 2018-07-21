@@ -15,6 +15,10 @@
     "arg-overflow": [
       "off"
     ],
+    "max-len": [
+      "warning",
+      79
+    ],
     "security/enforce-explicit-visibility": [
       "error"
     ],

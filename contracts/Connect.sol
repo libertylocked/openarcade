@@ -34,21 +34,26 @@ library Connect {
     }
 
     /* Internal functions */
-    // All internal functions below must be implemented in the game library with the
-    // exact function signatures.
+    // All internal functions below must be implemented in the game library
+    // with the exact function signatures.
 
     /**
-     * @dev Inits game state. This function should modify the state being passed in
-     * @param state The game state. Everything is at its default value in the state
+     * @dev Inits game state. This function should modify the state being
+     *   passed in
+     * @param state The game state. Everything is at its default value in the
+     *   state
      * @param tools Platform tools
      * @param playerCount Number of players
+     * @param initParams Other init parameters
      * @return The ID of the initial player who will be in control
      */
-    function init(Game.State storage state, Tools storage tools, uint playerCount)
+    function init(
+        Game.State storage state, Tools storage tools,
+        uint playerCount, bytes initParams)
         internal
         returns (uint)
     {
-        return Game.init(state, tools, playerCount);
+        return Game.init(state, tools, playerCount, initParams);
     }
 
     /**
@@ -70,7 +75,9 @@ library Connect {
      * @param tools Platform tools
      * @param info Info about current match
      */
-    function update(Game.State storage state, Tools storage tools, Info storage info, Input memory input)
+    function update(
+        Game.State storage state, Tools storage tools,
+        Info storage info, Input memory input)
         internal
     {
         return Game.update(state, tools, info, input);
@@ -83,7 +90,9 @@ library Connect {
      * @param input Player input
      * @return True if move is legal
      */
-    function legal(Game.State storage state, Info storage info, Input memory input)
+    function legal(
+        Game.State storage state, Info storage info,
+        Input memory input)
         internal view
         returns (bool)
     {
@@ -131,10 +140,11 @@ library Connect {
 
     /* External functions */
 
-    // Optionally, game library can define a function called `encodeAction`, which can
-    // be accessed by JavaScript clients to encode an action into bytes.
-    // If this function is absent in library contract, game developer must provide a
-    // JavaScript function to encode actions.
+    // Optionally, game library can define a function called `encodeAction`,
+    // which can be accessed by JavaScript clients to encode an action into
+    // bytes.
+    // If this function is absent in library contract, game developer must
+    // provide a JavaScript function to encode actions.
     //
     // function encodeAction(...)
     //     external pure

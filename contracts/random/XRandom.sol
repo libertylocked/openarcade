@@ -32,17 +32,26 @@ contract XRandom is Ownable, Relayable {
     event LogRandomGenerated(uint index, uint number);
 
     modifier onlyPlayer(address sender) {
-        require(players[sender], "sender must be player or relayed from player");
+        require(
+            players[sender],
+            "sender must be player or relayed from player"
+        );
         _;
     }
 
     modifier onlyNotCommitted(address sender) {
-        require(commits[sender] == 0, "player must not have already committed");
+        require(
+            commits[sender] == 0,
+            "player must not have already committed"
+        );
         _;
     }
 
     modifier onlyNotRevealed(address sender) {
-        require(reveals[sender] == 0, "player must not have already revealed");
+        require(
+            reveals[sender] == 0,
+            "player must not have already revealed"
+        );
         _;
     }
 
@@ -163,7 +172,10 @@ contract XRandom is Ownable, Relayable {
     {
         // the commit can't be zero or hashed zero
         require(_hash != 0, "commit cannot be zero");
-        require(_hash != keccak256(abi.encodePacked(uint(0))), "commit cannot be hashed zero");
+        require(
+            _hash != keccak256(abi.encodePacked(uint(0))),
+            "commit cannot be hashed zero"
+        );
         commits[sender] = _hash;
         commitCount++;
         emit LogCommitted(sender, _hash);
@@ -182,7 +194,10 @@ contract XRandom is Ownable, Relayable {
         returns (bool)
     {
         // check commit
-        require(keccak256(abi.encodePacked(_num)) == commits[sender], "reveal does not match commit");
+        require(
+            keccak256(abi.encodePacked(_num)) == commits[sender],
+            "reveal does not match commit"
+        );
         reveals[sender] = _num;
         revealCount++;
         emit LogRevealed(sender, _num);
