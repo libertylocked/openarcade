@@ -15,7 +15,7 @@ OpenArcade is a game engine for turn based games on Ethereum.
 - See `contracts/games` for example games developed on OpenArcade!
 - See `test` folder for client example code
 
-# Quick start
+# Quick Start
 - Copy the starter template at `contracts/games/Starter.sol` to `contracts/games/MyGame.sol`
 - Implement the functions marked as TODOs
 - Run `npm run compile`
