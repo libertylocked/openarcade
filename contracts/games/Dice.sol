@@ -26,12 +26,11 @@ library Dice {
 
     function init(
         State storage state, Connect.Tools storage /*tools*/,
-        uint /*playerCount*/, bytes /*initParams*/)
+        uint /*playerCount*/, bytes initParams)
         internal
         returns (uint)
     {
-        // TODO: add init params
-        state.roundsLeft = 2;
+        state.roundsLeft = initParams.sliceUint(0);
         // start the game with player 1 in control
         return 1;
     }
