@@ -11,9 +11,11 @@ library Starter {
     using BytesUtil for bytes;
 
     struct State {
+        // TODO - define your game state here
     }
 
     struct Action {
+        // TODO - define player action here
     }
 
     /* Internal functions */
