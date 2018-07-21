@@ -17,14 +17,15 @@ OpenArcade is a game engine for turn based games on Ethereum.
 
 # Quick Start
 - Copy the starter template at `contracts/games/Starter.sol` to `contracts/games/MyGame.sol`
-- Implement the functions marked as TODOs
-- Run `npm run compile`
+- Change the import lines marked with TODO in `MyGame.sol`
+- Run `npm run prebuild` to generate
+- Write your game! Implement the functions marked with TODO
 - Write some tests! You can require your game controller like this in tests
 ```javascript
 const Controller = artifacts.require('MyGameController')
 ```
 - Put the tests in `test` folder
-- Run `npm run test`
+- Run `npm test test/{test-file-for-my-game}`
 
 # Developer Guides
 - [Make your first OpenArcade game](#)
