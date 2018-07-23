@@ -80,4 +80,19 @@ library Starter {
         // TODO
         return Action();
     }
+
+    function encodeState(State storage state)
+        internal view
+        returns (bytes)
+    {
+        // TODO
+        return new bytes(0);
+    }
+
+    function setState(State storage state, bytes encodedState)
+        internal
+    {
+        // TODO
+        return;
+    }
 }

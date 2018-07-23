@@ -132,6 +132,30 @@ library TTTGame {
         });
     }
 
+    function encodeState(State storage state)
+        internal view
+        returns (bytes)
+    {
+        // To encode the TTT board we simply get all the
+        // cells' PIDs
+        uint[9] memory pidArray;
+        for (uint i = 0; i < 9; i++) {
+            pidArray[i] = state.board[i].pid;
+        }
+        // we encode a fix-size array - it will be exactly 9 words
+        return abi.encode(pidArray);
+    }
+
+    function setState(State storage state, bytes encodedState)
+        internal
+    {
+        // the encoded state should be exactly 9 * 32 bytes
+        uint[] memory pidArray = encodedState.toUintArray();
+        for (uint i = 0; i < 9; i++) {
+            state.board[i].pid = pidArray[i];
+        }
+    }
+
     /* External functions */
 
     /// Encodes an action into bytes

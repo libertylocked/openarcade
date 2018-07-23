@@ -138,6 +138,19 @@ library Connect {
         return Game.decodeAction(s);
     }
 
+    function encodeState(Game.State storage state)
+        internal view
+        returns (bytes)
+    {
+        return Game.encodeState(state);
+    }
+
+    function setState(Game.State storage state, bytes encodedState)
+        internal
+    {
+        return Game.setState(state, encodedState);
+    }
+
     /* External functions */
 
     // Optionally, game library can define a function called `encodeAction`,
