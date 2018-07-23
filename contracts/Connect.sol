@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "./random/RXRandom.sol";
+import "./random/IRandom.sol";
 // change this line for other games
 import { TTTGame as Game } from "./TTTGame.sol";
 
@@ -30,7 +30,7 @@ library Connect {
 
     // Game platform tools injected into the game
     struct Tools {
-        RXRandom random;
+        IRandom random;
     }
 
     /* Internal functions */

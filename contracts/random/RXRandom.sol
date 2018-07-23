@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../access/Relayable.sol";
+import "./IRandom.sol";
 
 
 // Ring XOR keccak-256 random number generator
@@ -96,7 +97,7 @@ contract RXRandom is Ownable, Relayable {
         roundNeg2CommitCount++;
         // XXX maybe have explicit round advance
         if (roundNeg2CommitCount == playersArray.length) {
-            _changeState(State.RoundNeg1);
+            mChangeState(State.RoundNeg1);
         }
         return true;
     }
@@ -128,12 +129,12 @@ contract RXRandom is Ownable, Relayable {
             if (roundNeg1CommitCount == playersArray.length) {
                 // RNG is ready at the end of round -1
                 // This marks the start of round 0
-                _changeState(State.Ready);
+                mChangeState(State.Ready);
             }
         } else if (state == State.PendingUpdate) {
             // increment ring turn and set state back to ready
             ringTurn++;
-            _changeState(State.Ready);
+            mChangeState(State.Ready);
         }
         return true;
     }
@@ -142,8 +143,10 @@ contract RXRandom is Ownable, Relayable {
         external
         onlyOwner
         onlyDuring(State.Ready)
+        returns (bool)
     {
-        _changeState(State.PendingUpdate);
+        mChangeState(State.PendingUpdate);
+        return true;
     }
 
     function next()
@@ -184,7 +187,7 @@ contract RXRandom is Ownable, Relayable {
 
     /* Private functions */
 
-    function _changeState(State newState)
+    function mChangeState(State newState)
         private
     {
         state = newState;

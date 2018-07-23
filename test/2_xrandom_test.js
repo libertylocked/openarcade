@@ -138,7 +138,7 @@ contract('XRandom', () => {
       assert.equal((await instance.current()).toString(16), rng.next().toString(16))
     })
   })
-  describe('reset', () => {
+  describe('request', () => {
     beforeEach('commit and reveal and next', async () => {
       await instance.commit(alice, aliceCommit)
       await instance.commit(bob, bobCommit)
@@ -152,7 +152,7 @@ contract('XRandom', () => {
       await instance.next()
     })
     it('should reset the state', async () => {
-      await instance.reset()
+      await instance.request()
       assert.equal(await instance.state(), 0)
       assert.equal(await instance.seed(), 0)
       assert.equal(await instance.index(), 0)
@@ -169,7 +169,7 @@ contract('XRandom', () => {
       await assertRevert(instance.next())
     })
     it('should allow commit and reveal after reset', async () => {
-      await instance.reset()
+      await instance.request()
       await instance.commit(alice, aliceCommit)
       await instance.commit(bob, bobCommit)
       await instance.commit(carol, carolCommit)

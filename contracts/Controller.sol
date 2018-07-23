@@ -14,6 +14,7 @@ contract Controller is Ownable, Destructible {
     Game.State state;
     Connect.Info info; // part of state game is not allowed to modify
     Connect.Tools tools;
+    RXRandom public random;
     mapping(address => bool) public deposited;
     uint public depositedCount;
     mapping(address => uint) public players; // value is playerID
@@ -51,7 +52,7 @@ contract Controller is Ownable, Destructible {
 
     modifier rngReady() {
         require(
-            tools.random.state() == RXRandom.State.Ready,
+            random.ready(),
             "RNG must be ready"
         );
         _;
@@ -67,8 +68,9 @@ contract Controller is Ownable, Destructible {
             control: 0
         });
         // create RNG contract
+        random = new RXRandom(_players, address(this));
         tools = Connect.Tools({
-            random: new RXRandom(_players, address(this))
+            random: IRandom(random)
         });
         // start in depositing stage
         lifecycle = LifeCycle.Depositing;
@@ -99,7 +101,7 @@ contract Controller is Ownable, Destructible {
         returns (bool)
     {
         require(
-            tools.random.commit(msg.sender, inputHash),
+            random.commit(msg.sender, inputHash),
             "RNG commit fail"
         );
         return true;
@@ -111,7 +113,7 @@ contract Controller is Ownable, Destructible {
         returns (bool)
     {
         require(
-            tools.random.revealAndCommit(msg.sender, input, inputHash),
+            random.revealAndCommit(msg.sender, input, inputHash),
             "RNG reveal fails"
         );
         return true;
@@ -215,12 +217,5 @@ contract Controller is Ownable, Destructible {
         returns (uint)
     {
         return info.control;
-    }
-
-    function random()
-        public view
-        returns (address)
-    {
-        return address(tools.random);
     }
 }
