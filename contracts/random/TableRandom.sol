@@ -14,9 +14,8 @@ contract TableRandom is IRandom {
     }
 
     function next() external returns (uint) {
-        uint n = rndTable[index];
         index = (index + 1) % rndTable.length;
-        return n;
+        return rndTable[index];
     }
 
     function request() external returns (bool) {

@@ -1,6 +1,6 @@
 import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
 import eutil from 'ethereumjs-util'
-import XRandomJS from './helpers/xrandom'
+import XRandomJS from '../helpers/xrandom'
 
 const XRandom = artifacts.require('XRandom')
 

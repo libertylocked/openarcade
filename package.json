@@ -4,7 +4,7 @@
   "description": "Open arcade platform on Ethereum",
   "main": "truffle-config.js",
   "scripts": {
-    "start": "ganache-cli -p 7545 -i 5777 -e 1000",
+    "start": "ganache-cli -p 7545 -i 5777 -e 1000 -l 8000000",
     "lint:sol": "solium -d .",
     "lint:js": "eslint migrations test",
     "lint": "npm run lint:sol && npm run lint:js",
