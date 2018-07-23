@@ -10,7 +10,9 @@ const writeFile = util.promisify(fs.writeFile)
 // Configs for paths to files and dirs
 const CONNECT_CONTRACT = 'Connect.sol'
 const CONTROLLER_CONTRACT = 'Controller.sol'
+const CONNECT_MOCK_CONTRACT = 'ConnectMock.sol'
 const GAMES_FOLDER = 'games'
+const MOCKS_FOLDER = 'mocks'
 const GENERATED_FOLDER = '.generated'
 
 const readConnectTemplate = () => readFile(
@@ -18,6 +20,9 @@ const readConnectTemplate = () => readFile(
 
 const readControllerTemplate = () => readFile(
   path.resolve(__dirname, '../contracts/', CONTROLLER_CONTRACT), 'utf8')
+
+const readConnectMockTemplate = () => readFile(
+  path.resolve(__dirname, '../contracts/', MOCKS_FOLDER, CONNECT_MOCK_CONTRACT), 'utf8')
 
 const generateConnect = (connectTmpl, gameName) => {
   // XXX this is kind of nasty, maybe use proper placeholders?
@@ -51,23 +56,40 @@ const generateController = (controllerTmpl, gameName) => {
   )
 }
 
+const generateConnectMock = (connectMockTmpl, gameName) => {
+  return connectMockTmpl.replace(
+    'import "../Connect.sol";',
+    `import { ${gameName}Connect as Connect } from "./${gameName}Connect.sol";`
+  ).replace(
+    'import "../TTTGame.sol";',
+    `import { ${gameName} as Game } from "../${GAMES_FOLDER}/${gameName}.sol";`
+  ).replace(
+    'contract ConnectMock',
+    `contract ${gameName}ConnectMock`
+  )
+}
+
 const prebuild = async () => {
   const generatedFolder = path.resolve(__dirname, '../contracts/', GENERATED_FOLDER)
   rimraf.sync(generatedFolder)
   if (!fs.existsSync(generatedFolder)) {
     fs.mkdirSync(generatedFolder)
   }
+  // read templates
   const connectTempl = await readConnectTemplate()
   const controllerTmpl = await readControllerTemplate()
+  const connectMockTmpl = await readConnectMockTemplate()
   const fnames = await readdir(path.resolve(__dirname, '../contracts/', GAMES_FOLDER))
   fnames.filter((fname) => path.extname(fname) === '.sol').forEach(async (fname) => {
     console.log(`Prebuilding game: ${fname}...`)
     // get the game name
     const gameName = path.basename(fname, '.sol')
-    const gameConnect = generateConnect(connectTempl, gameName)
-    const gameController = generateController(controllerTmpl, gameName)
-    await writeFile(path.resolve(generatedFolder, `${gameName}Connect.sol`), gameConnect)
-    await writeFile(path.resolve(generatedFolder, `${gameName}Controller.sol`), gameController)
+    await writeFile(path.resolve(generatedFolder, `${gameName}Connect.sol`),
+      generateConnect(connectTempl, gameName))
+    await writeFile(path.resolve(generatedFolder, `${gameName}Controller.sol`),
+      generateController(controllerTmpl, gameName))
+    await writeFile(path.resolve(generatedFolder, `${gameName}ConnectMock.sol`),
+      generateConnectMock(connectMockTmpl, gameName))
     console.log(`Prebuild game done: ${fname}`)
   })
 }

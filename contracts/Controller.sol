@@ -134,16 +134,16 @@ contract Controller is Ownable, Destructible {
         lifecycle = LifeCycle.Playing;
     }
 
-    function play(bytes _action)
+    function play(bytes action)
         external
         onlyPlayer
         onlyDuring(LifeCycle.Playing)
         rngReady()
     {
-        uint playerID = players[msg.sender];
+        uint pid = players[msg.sender];
         Connect.Input memory input = Connect.Input({
-            pid: playerID,
-            action: Connect.decodeAction(_action)
+            pid: pid,
+            action: Connect.decodeAction(action)
         });
         // check if legal
         require(
@@ -160,7 +160,7 @@ contract Controller is Ownable, Destructible {
         // update control
         info.control = Connect.next(state, info);
         // emit log
-        emit LogPlayerMove(msg.sender, playerID, _action);
+        emit LogPlayerMove(msg.sender, pid, action);
     }
 
     function end()
