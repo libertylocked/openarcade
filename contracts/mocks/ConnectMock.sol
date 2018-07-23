@@ -28,7 +28,8 @@ contract ConnectMock {
         external
         returns (uint)
     {
-        uint initControl = Connect.init(state, tools, info.playerCount, initParams);
+        uint initControl = Connect.init(state, tools,
+            info.playerCount, initParams);
         info.control = initControl;
         emit LogInit(initControl);
         return initControl;
