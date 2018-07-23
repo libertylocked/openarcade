@@ -5,7 +5,7 @@ import "./IRandom.sol";
 // Classic DOOM style random table
 contract TableRandom is IRandom {
     uint[] public rndTable;
-    uint index;
+    uint public index;
 
     constructor(uint[] numbers) public {
         require(numbers.length > 0);
