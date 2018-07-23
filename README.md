@@ -21,15 +21,15 @@ OpenArcade is a game engine for turn based games on Ethereum.
 - Run `npm run prebuild` to generate
 - Write your game! Implement the functions marked with TODO
 - Write some tests!
-  - You can require the mock connector for your game like this in tests
-    ```javascript
-    // See test/games for examples
-    const Connect = artifacts.require('MyGameConnectMock')
-    ```
-  - Or you can require your game controller directly
-    ```javascript
-    const Controller = artifacts.require('MyGameController')
-    ```
+    - You can require the mock connector for your game like this in tests
+    - See `test/games` for examples
+        ```
+        const Connect = artifacts.require('MyGameConnectMock')
+        ```
+    - Or you can require your game controller directly
+        ```
+        const Controller = artifacts.require('MyGameController')
+        ```
 - Put the tests in `test` folder
 - Run `npm test test/{test-file-for-my-game}`
 
