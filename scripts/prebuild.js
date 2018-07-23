@@ -26,8 +26,8 @@ const generateConnect = (connectTmpl, gameName) => {
     `import { TTTGame as Game } from "./TTTGame.sol";`,
     `import { ${gameName} as Game } from "../${GAMES_FOLDER}/${gameName}.sol";`
   ).replace(
-    'import "./random/RXRandom.sol";',
-    'import "../random/RXRandom.sol";'
+    'import "./random/IRandom.sol";',
+    'import "../random/IRandom.sol";'
   ).replace(
     'library Connect',
     `library ${gameName}Connect`
