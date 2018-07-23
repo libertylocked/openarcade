@@ -12,6 +12,8 @@ contract ConnectMock {
     Connect.Info info;
     Connect.Tools tools;
 
+    event LogInit(uint initialControl);
+
     constructor(uint playerCount, IRandom random) public {
         info = Connect.Info({
             playerCount: playerCount,
@@ -26,16 +28,18 @@ contract ConnectMock {
         external
         returns (uint)
     {
-        uint initialControl = Connect.init(state, tools, info.playerCount, initParams);
-        info.control = initialControl;
-        return initialControl;
+        uint initControl = Connect.init(state, tools, info.playerCount, initParams);
+        info.control = initControl;
+        emit LogInit(initControl);
+        return initControl;
     }
 
     function next()
         external view
         returns (uint)
     {
-        return Connect.next(state, info);
+        uint nextPid = Connect.next(state, info);
+        return nextPid;
     }
 
     function update(uint pid, bytes action)
@@ -84,5 +88,27 @@ contract ConnectMock {
         external
     {
         return Game.setState(state, encodedState);
+    }
+
+    // Below functions are not part of Connect, but included to make testing easier
+    // This function replaces the RNG
+    function setRandom(IRandom random)
+        external
+    {
+        tools.random = random;
+    }
+
+    function setInfo(uint playerCount, uint control)
+        external
+    {
+        info.playerCount = playerCount;
+        info.control = control;
+    }
+
+    function control()
+        external view
+        returns (uint)
+    {
+        return info.control;
     }
 }

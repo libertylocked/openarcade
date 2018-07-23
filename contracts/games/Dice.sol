@@ -12,7 +12,7 @@ library Dice {
 
     struct State {
         uint roundsLeft;
-        uint[] score;
+        uint[] score; // index 0 is unused
     }
 
     struct Action {
@@ -106,15 +106,28 @@ library Dice {
         internal view
         returns (bytes)
     {
-        // TODO
-        return new bytes(0);
+        // Because index 0 in score array is unused, we can put roundsLeft in
+        // it and do abi encode packed on this dynamic sized array.
+        // So the packed byte arr would be like
+        // [roundsLeft, player1Score, player2Score, ...]
+        uint[] memory data = new uint[](state.score.length);
+        data[0] = state.roundsLeft;
+        for (uint i = 1; i < state.score.length; i++) {
+            data[i] = state.score[i];
+        }
+        return abi.encodePacked(data);
     }
 
     function setState(State storage state, bytes encodedState)
         internal
     {
-        // TODO
-        return;
+        uint[] memory data = encodedState.toUintArray();
+        state.roundsLeft = data[0];
+        uint[] memory score = new uint[](data.length);
+        for (uint i = 1; i < data.length; i++) {
+            score[i] = data[i];
+        }
+        state.score = score;
     }
 
     /* External functions */
