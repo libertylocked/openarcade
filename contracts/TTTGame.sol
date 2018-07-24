@@ -150,6 +150,8 @@ library TTTGame {
         internal
     {
         // the encoded state should be exactly 9 * 32 bytes
+        // when we use toUintArray it will convert it to a dynamic-sized array
+        // with length == 9
         uint[] memory pidArray = encodedState.toUintArray();
         for (uint i = 0; i < 9; i++) {
             state.board[i].pid = pidArray[i];
