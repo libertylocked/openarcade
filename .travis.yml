@@ -8,4 +8,4 @@ script:
   - npm run coverage
 after_success:
   - npm i -g codecov
-  - codecov --file coverage/lcov.info --disable search
+  - codecov --file=coverage/lcov.info --disable=search
