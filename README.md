@@ -1,6 +1,7 @@
 OpenArcade
 ---
 [![Build Status](https://travis-ci.com/libertylocked/openarcade.svg?token=Zxc7dXTsMTVkgzbD5qVN&branch=master)](https://travis-ci.com/libertylocked/openarcade)
+[![Codecov](https://codecov.io/gh/libertylocked/openarcade/branch/master/graph/badge.svg?token=taDYJ6t9PK)](https://codecov.io/gh/libertylocked/openarcade)
 
 # What is OpenArcade?
 OpenArcade is a game engine for turn based games on Ethereum.
