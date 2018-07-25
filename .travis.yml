@@ -6,6 +6,5 @@ before_install:
   - npm i -g npm@6
 script:
   - npm run coverage
-  - codecov
 after_success:
   - bash <(curl -s https://codecov.io/bash)
