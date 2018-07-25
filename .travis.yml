@@ -7,5 +7,4 @@ before_install:
 script:
   - npm run coverage
 after_success:
-  - npm i -g codecov
-  - codecov --file=coverage.json
+  - bash <(curl -s https://codecov.io/bash) -f coverage.json
