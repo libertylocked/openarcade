@@ -4,8 +4,8 @@ module.exports = {
   skipFiles: [
     'Migrations.sol',
     'games/Starter.sol',
-    'mocks/BytesUtilMock.sol',
-    'mocks/ConnectMock.sol',
+    'mocks',
+    '.generated',
   ],
   compileCommand: 'npm run compile',
   testCommand: '../node_modules/.bin/truffle test --network coverage',
