@@ -17,6 +17,7 @@ library Connect {
     // This is the info about current match
     struct Info {
         uint playerCount;
+        uint turn;
         uint control;
     }
 

@@ -153,26 +153,29 @@ contract('TTTGame + Controller', (accounts) => {
     })
     it('should encode correctly when board is empty', async () => {
       const cstate = await controller.encodeControllerState.call()
-      // player1 is in control, the board is empty
-      assert.equal(cstate, encodeFixedUintArray([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+      // player1 is in control. turn is 0. the board is empty
+      assert.equal(cstate, encodeFixedUintArray([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
     })
-    it('should encode both control and gamestate (1)', async () => {
+    it('should encode info and gamestate (1)', async () => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       const cstate = await controller.encodeControllerState.call()
-      // player2 is in control
-      assert.equal(cstate, encodeFixedUintArray([2, 0, 0, 0, 0, 1, 0, 0, 0, 0]))
+      // player2 is in control. turn is 1
+      assert.equal(cstate, encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0]))
     })
-    it('should encode both control and gamestate (2)', async () => {
+    it('should encode info and gamestate (2)', async () => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
       const cstate = await controller.encodeControllerState.call()
-      assert.equal(cstate, encodeFixedUintArray([1, 0, 2, 0, 0, 1, 0, 0, 0, 0]))
+      assert.equal(cstate, encodeFixedUintArray([2, 1, 0, 2, 0, 0, 1, 0, 0, 0, 0]))
     })
   })
   describe('request fastforward', () => {
+    beforeEach('set up game', async () => {
+      await setupGame(controller, player1, player2)
+    })
     it('should allow players to vote to fastforward state', async () => {
       // create a state where player2 is in control, and (1, 1) is occupied by player 1
-      const cstate = encodeFixedUintArray([2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const cstate = encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
       const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
       // have both players sign the hash of cstate
       const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
@@ -191,12 +194,35 @@ contract('TTTGame + Controller', (accounts) => {
       assert.equal(tx.logs[0].event, 'LogStateFastforward')
       // check the control
       assert.equal(await controller.control.call(), 2)
+      // game should not be in terminal state
+      assert.isFalse(await controller.terminal.call())
       // check controller state
       const actualCstate = await controller.encodeControllerState.call()
       assert.equal(actualCstate, cstate)
     })
+    it('should be playable after fastforwarding', async () => {
+      // the state is after player 1 made the first move at (1,1)
+      const cstate = encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
+      const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
+      const p2Sig = eutil.fromRpcSig(web3.eth.sign(player2, cstateHash))
+      await controller.requestFastforward(cstate, [
+        eutil.bufferToHex(p1Sig.r),
+        eutil.bufferToHex(p2Sig.r)
+      ], [
+        eutil.bufferToHex(p1Sig.s),
+        eutil.bufferToHex(p2Sig.s)
+      ], [
+        p1Sig.v,
+        p2Sig.v
+      ])
+      // player 2 makes a move
+      await controller.play(encodeAction(1, 0), { from: player2 })
+      // then player 1 makes next move
+      await controller.play(encodeAction(1, 2), { from: player1 })
+    })
     it('should reject fastforward request if one of the sigs are not valid', async () => {
-      const cstate = encodeFixedUintArray([2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const cstate = encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
       const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
       // only player 1 signs the state
       const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
@@ -210,6 +236,26 @@ contract('TTTGame + Controller', (accounts) => {
       ], [
         p1Sig.v,
         0
+      ]))
+    })
+    it('should reject fastforward request if the target state is a previous state', async () => {
+      await controller.play(encodeAction(1, 1), { from: player1 })
+      await controller.play(encodeAction(1, 0), { from: player2 })
+      // try to reset to initial state
+      const cstate = encodeFixedUintArray([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+      const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
+      const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
+      const p2Sig = eutil.fromRpcSig(web3.eth.sign(player2, cstateHash))
+      // players now request fastforward
+      await assertRevert(controller.requestFastforward(cstate, [
+        eutil.bufferToHex(p1Sig.r),
+        eutil.bufferToHex(p2Sig.r)
+      ], [
+        eutil.bufferToHex(p1Sig.s),
+        eutil.bufferToHex(p2Sig.s)
+      ], [
+        p1Sig.v,
+        p2Sig.v
       ]))
     })
   })

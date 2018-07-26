@@ -2,6 +2,8 @@ pragma solidity 0.4.24;
 
 
 // An abstract contract that supports state fastforward
+// Note that the contract implementing this interface should check if
+//  the state is forward (vs. backward) before setting the state
 contract Fastforwardable {
     function requestFastforward(
         bytes cstate, bytes32[] rs, bytes32[] ss, uint8[] vs)

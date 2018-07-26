@@ -29,13 +29,13 @@ contract('Dice', (accounts) => {
     it('should alternate and wrap around', async () => {
       await connect.init(encodeActionABI(1))
       // 3 players, 1 is in control
-      await connect.setInfo(3, 1)
+      await connect.setInfo(3, 0, 1)
       assert.equal((await connect.next()).toNumber(), 2)
       // make 2 in control
-      await connect.setInfo(3, 2)
+      await connect.setInfo(3, 0, 2)
       assert.equal((await connect.next()).toNumber(), 3)
       // should wrap around
-      await connect.setInfo(3, 3)
+      await connect.setInfo(3, 0, 3)
       assert.equal((await connect.next()).toNumber(), 1)
     })
   })
@@ -71,7 +71,7 @@ contract('Dice', (accounts) => {
   describe('legal', () => {
     it('should only allow player to play in his/her turn', async () => {
       // 2 players, 1 is in control
-      await connect.setInfo(2, 1)
+      await connect.setInfo(2, 0, 1)
       assert.isTrue(await connect.legal(1, encodeActionABI(1)))
       assert.isFalse(await connect.legal(2, encodeActionABI(1)))
     })

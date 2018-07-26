@@ -63,12 +63,13 @@ contract Controller is Fastforwardable, Ownable, Destructible {
     }
 
     constructor(address[] _players) public {
-        for (uint i = 0; i < _players.length; i++) {
+        for (uint i = 0; i < _players.length; ++i) {
             players[_players[i]] = 1 + i;
         }
         playersArray = _players;
         info = Connect.Info({
             playerCount: _players.length,
+            turn: 0,
             control: 0
         });
         // create RNG contract
@@ -93,7 +94,7 @@ contract Controller is Fastforwardable, Ownable, Destructible {
             "player must not have already deposited"
         );
         deposited[msg.sender] = true;
-        depositedCount++;
+        ++depositedCount;
         if (depositedCount == playersArray.length) {
             lifecycle = LifeCycle.Starting;
         }
@@ -163,6 +164,8 @@ contract Controller is Fastforwardable, Ownable, Destructible {
         Connect.update(state, tools, info, input);
         // update control
         info.control = Connect.next(state, info);
+        // update turn index
+        ++info.turn;
         // emit log
         emit LogPlayerMove(msg.sender, pid, action);
     }
@@ -178,7 +181,7 @@ contract Controller is Fastforwardable, Ownable, Destructible {
         );
         // calculate payout for each player
         uint ppoints;
-        for (uint i = 0; i < playersArray.length; i++) {
+        for (uint i = 0; i < playersArray.length; ++i) {
             ppoints = Connect.goal(state, info, players[playersArray[i]]);
             points[playersArray[i]] = ppoints;
             totalPoints = totalPoints.add(ppoints);
@@ -227,9 +230,10 @@ contract Controller is Fastforwardable, Ownable, Destructible {
         external view
         returns (bytes)
     {
-        // encode both control and game state
-        // XXX: should we encode Random state too?
-        return abi.encodePacked(info.control, Connect.encodeState(state));
+        // XXX: should encode Random state too
+        // encode turn, control, game state
+        return abi.encodePacked(
+            info.turn, info.control, Connect.encodeState(state));
     }
 
     /* Internal functions */
@@ -247,10 +251,14 @@ contract Controller is Fastforwardable, Ownable, Destructible {
     {
         // the cstate is more than just game state
         // in controller the state is control + game state
+        uint turn = cstate.sliceUint(0);
+        require(turn >= info.turn, "cannot fastforward to a previous state");
+        // set turn
+        info.turn = turn;
         // set control
-        info.control = cstate.sliceUint(0);
+        info.control = cstate.sliceUint(32);
         // set game state
-        Connect.setState(state, cstate.slice(32, cstate.length - 32));
+        Connect.setState(state, cstate.slice(64, cstate.length - 64));
         emit LogStateFastforward();
         return true;
     }

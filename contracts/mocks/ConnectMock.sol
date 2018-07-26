@@ -17,6 +17,7 @@ contract ConnectMock {
     constructor(uint playerCount, IRandom random) public {
         info = Connect.Info({
             playerCount: playerCount,
+            turn: 0,
             control: 0
         });
         tools = Connect.Tools({
@@ -99,10 +100,11 @@ contract ConnectMock {
         tools.random = random;
     }
 
-    function setInfo(uint playerCount, uint control)
+    function setInfo(uint playerCount, uint turn, uint control)
         external
     {
         info.playerCount = playerCount;
+        info.turn = turn;
         info.control = control;
     }
 
