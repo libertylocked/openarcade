@@ -45,6 +45,12 @@ const generateController = (controllerTmpl, gameName) => {
     'import "./Connect.sol";',
     `import { ${gameName}Connect as Connect } from "./${gameName}Connect.sol";`
   ).replace(
+    'import "./util/BytesUtil.sol";',
+    'import "../util/BytesUtil.sol";'
+  ).replace(
+    'import "./statechan/Fastforwardable.sol";',
+    'import "../statechan/Fastforwardable.sol";'
+  ).replace(
     'import "./random/RXRandom.sol";',
     'import "../random/RXRandom.sol";'
   ).replace(

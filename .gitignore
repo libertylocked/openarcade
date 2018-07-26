@@ -62,13 +62,16 @@ typings/
 # next.js build output
 .next
 
-# Build
+# Truffle artifacts
 /build/
 
 # Solidity-coverage
-coverage.json
+/coverage.json
+/scTopics
+/allFiredEvents
 
 # Web3 requests
-.node-xmlhttprequest-sync-*
+/.node-xmlhttprequest-sync-*
 
+# Contracts generated from prebuild script
 /contracts/.generated

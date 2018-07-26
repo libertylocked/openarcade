@@ -9,6 +9,24 @@ const Controller = artifacts.require('Controller')
 // const newActionEncoder = (lib) => (...args) => lib.encodeAction.call(...args)
 const encodeActionABI = (x, y) => eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [x, y]))
 const newCommit = (v) => eutil.bufferToHex(XRandomJS.newCommit(v))
+const encodeFixedUintArray = (arr) => eutil.bufferToHex(
+  abi.rawEncode(arr.map(() => 'uint256'), arr))
+const setupGame = async (controller, p1, p2) => {
+  const bet = await controller.BET_AMOUNT()
+  await controller.deposit({
+    from: p1,
+    value: bet
+  })
+  await controller.deposit({
+    from: p2,
+    value: bet
+  })
+  await controller.commit(newCommit(1337), { from: p1 })
+  await controller.commit(newCommit(9001), { from: p2 })
+  await controller.revealAndCommit(1337, newCommit(1338), { from: p1 })
+  await controller.revealAndCommit(9001, newCommit(9002), { from: p2 })
+  await controller.start(0)
+}
 
 contract('TTTGame + Controller', (accounts) => {
   let controller
@@ -66,20 +84,7 @@ contract('TTTGame + Controller', (accounts) => {
   })
   describe('play', () => {
     beforeEach('setup game', async () => {
-      const bet = await controller.BET_AMOUNT()
-      await controller.deposit({
-        from: player1,
-        value: bet
-      })
-      await controller.deposit({
-        from: player2,
-        value: bet
-      })
-      await controller.commit(newCommit(1337), { from: player1 })
-      await controller.commit(newCommit(9001), { from: player2 })
-      await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
-      await controller.revealAndCommit(9001, newCommit(1338), { from: player2 })
-      await controller.start(0)
+      await setupGame(controller, player1, player2)
     })
     it('should only allow player who has control to play', async () => {
       const tx = await controller.play(encodeAction(0, 0), { from: player1 })
@@ -97,20 +102,7 @@ contract('TTTGame + Controller', (accounts) => {
   })
   describe('withdraw', () => {
     beforeEach('setup game', async () => {
-      const bet = await controller.BET_AMOUNT()
-      await controller.deposit({
-        from: player1,
-        value: bet
-      })
-      await controller.deposit({
-        from: player2,
-        value: bet
-      })
-      await controller.commit(newCommit(1337), { from: player1 })
-      await controller.commit(newCommit(9001), { from: player2 })
-      await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
-      await controller.revealAndCommit(9001, newCommit(9002), { from: player2 })
-      await controller.start(0)
+      await setupGame(controller, player1, player2)
     })
     it('should pay player 1 when player 1 wins', async () => {
       const bet = await controller.BET_AMOUNT()
@@ -153,6 +145,72 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.play(encodeAction(0, 0), { from: player1 })
       await assertRevert(controller.end())
       await assertRevert(controller.withdraw({ from: player1 }))
+    })
+  })
+  describe('encode controller state', () => {
+    beforeEach('setup game', async () => {
+      await setupGame(controller, player1, player2)
+    })
+    it('should encode correctly when board is empty', async () => {
+      const cstate = await controller.encodeControllerState.call()
+      // player1 is in control, the board is empty
+      assert.equal(cstate, encodeFixedUintArray([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+    })
+    it('should encode both control and gamestate (1)', async () => {
+      await controller.play(encodeAction(1, 1), { from: player1 })
+      const cstate = await controller.encodeControllerState.call()
+      // player2 is in control
+      assert.equal(cstate, encodeFixedUintArray([2, 0, 0, 0, 0, 1, 0, 0, 0, 0]))
+    })
+    it('should encode both control and gamestate (2)', async () => {
+      await controller.play(encodeAction(1, 1), { from: player1 })
+      await controller.play(encodeAction(1, 0), { from: player2 })
+      const cstate = await controller.encodeControllerState.call()
+      assert.equal(cstate, encodeFixedUintArray([1, 0, 2, 0, 0, 1, 0, 0, 0, 0]))
+    })
+  })
+  describe('request fastforward', () => {
+    it('should allow players to vote to fastforward state', async () => {
+      // create a state where player2 is in control, and (1, 1) is occupied by player 1
+      const cstate = encodeFixedUintArray([2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
+      // have both players sign the hash of cstate
+      const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
+      const p2Sig = eutil.fromRpcSig(web3.eth.sign(player2, cstateHash))
+      // players now request fastforward
+      const tx = await controller.requestFastforward(cstate, [
+        eutil.bufferToHex(p1Sig.r),
+        eutil.bufferToHex(p2Sig.r)
+      ], [
+        eutil.bufferToHex(p1Sig.s),
+        eutil.bufferToHex(p2Sig.s)
+      ], [
+        p1Sig.v,
+        p2Sig.v
+      ])
+      assert.equal(tx.logs[0].event, 'LogStateFastforward')
+      // check the control
+      assert.equal(await controller.control.call(), 2)
+      // check controller state
+      const actualCstate = await controller.encodeControllerState.call()
+      assert.equal(actualCstate, cstate)
+    })
+    it('should reject fastforward request if one of the sigs are not valid', async () => {
+      const cstate = encodeFixedUintArray([2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
+      // only player 1 signs the state
+      const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
+      // now request fastforward with only 1 sig
+      await assertRevert(controller.requestFastforward(cstate, [
+        eutil.bufferToHex(p1Sig.r),
+        '0x'
+      ], [
+        eutil.bufferToHex(p1Sig.s),
+        '0x'
+      ], [
+        p1Sig.v,
+        0
+      ]))
     })
   })
 })

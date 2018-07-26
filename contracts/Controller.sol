@@ -3,13 +3,16 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
+import "./util/BytesUtil.sol";
+import "./statechan/Fastforwardable.sol";
 import "./random/RXRandom.sol";
 import "./Connect.sol";
 import "./TTTGame.sol";
 
 
-contract Controller is Ownable, Destructible {
+contract Controller is Fastforwardable, Ownable, Destructible {
     using SafeMath for uint;
+    using BytesUtil for bytes;
 
     Game.State state;
     Connect.Info info; // part of state game is not allowed to modify
@@ -36,6 +39,7 @@ contract Controller is Ownable, Destructible {
         address indexed player, uint pid, bytes action
     );
     event LogWithdraw(address player, uint amount);
+    event LogStateFastforward();
 
     modifier onlyDuring(LifeCycle _status) {
         require(
@@ -206,16 +210,48 @@ contract Controller is Ownable, Destructible {
     }
 
     function terminal()
-        public view
+        external view
         returns (bool)
     {
         return Connect.terminal(state, info);
     }
 
     function control()
-        public view
+        external view
         returns (uint)
     {
         return info.control;
+    }
+
+    function encodeControllerState()
+        external view
+        returns (bytes)
+    {
+        // encode both control and game state
+        // XXX: should we encode Random state too?
+        return abi.encodePacked(info.control, Connect.encodeState(state));
+    }
+
+    /* Internal functions */
+
+    function getPlayersStorage()
+        private view
+        returns (address[] storage playersStorage)
+    {
+        playersStorage = playersArray;
+    }
+
+    function fastforward(bytes cstate)
+        private
+        returns (bool)
+    {
+        // the cstate is more than just game state
+        // in controller the state is control + game state
+        // set control
+        info.control = cstate.sliceUint(0);
+        // set game state
+        Connect.setState(state, cstate.slice(32, cstate.length - 32));
+        emit LogStateFastforward();
+        return true;
     }
 }
