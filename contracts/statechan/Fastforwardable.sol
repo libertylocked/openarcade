@@ -36,7 +36,7 @@ contract Fastforwardable {
 
     function getPlayersStorage()
         private view
-        returns (address[] storage playersStorage);
+        returns (address[] storage);
 
     function fastforward(bytes cstate) private returns (bool);
 }

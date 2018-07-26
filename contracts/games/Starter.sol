@@ -81,7 +81,7 @@ library Starter {
         return Action();
     }
 
-    function encodeState(State storage state)
+    function encodeState(State storage /*state*/)
         internal view
         returns (bytes)
     {
@@ -89,7 +89,7 @@ library Starter {
         return new bytes(0);
     }
 
-    function setState(State storage state, bytes encodedState)
+    function setState(State storage /*state*/, bytes /*encodedState*/)
         internal
     {
         // TODO

@@ -153,7 +153,7 @@ library MMM {
         });
     }
 
-    function encodeState(State storage state)
+    function encodeState(State storage /*state*/)
         internal view
         returns (bytes)
     {
@@ -161,7 +161,7 @@ library MMM {
         return new bytes(0);
     }
 
-    function setState(State storage state, bytes encodedState)
+    function setState(State storage /*state*/, bytes /*encodedState*/)
         internal
     {
         // TODO
