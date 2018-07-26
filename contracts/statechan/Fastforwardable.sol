@@ -14,7 +14,7 @@ contract Fastforwardable {
             rs.length == players.length &&
             ss.length == players.length &&
             vs.length == players.length,
-            "all players's sigs are required"
+            "all players' signatures are required"
         );
         bytes32 cstateHash = keccak256(cstate);
         for (uint i = 0; i < players.length; i++) {
