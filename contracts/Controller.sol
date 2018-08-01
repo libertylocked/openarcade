@@ -191,7 +191,7 @@ contract Controller is Fastforwardable, Ownable, Destructible {
     }
 
     function withdraw()
-        public
+        external
         onlyPlayer
         onlyDuring(LifeCycle.Withdrawing)
     {
@@ -239,7 +239,7 @@ contract Controller is Fastforwardable, Ownable, Destructible {
     /* Internal functions */
 
     function getPlayersStorage()
-        private view
+        internal view
         returns (address[] storage playersStorage)
     {
         playersStorage = playersArray;

@@ -22,14 +22,17 @@ contract Fastforwardable is Serializable {
         );
         bytes32 cstateHash = keccak256(cstate);
         for (uint i = 0; i < players.length; i++) {
-            require(recover(cstateHash, rs[i], ss[i], vs[i]) == players[i]);
+            require(
+                recover(cstateHash, rs[i], ss[i], vs[i]) == players[i],
+                "invalid signature"
+            );
         }
         // all checks ok - set state
-        require(deserialize(cstate));
+        require(deserialize(cstate), "fail to deserialize");
     }
 
     function recover(bytes32 message, bytes32 r, bytes32 s, uint8 v)
-        private pure returns (address)
+        internal pure returns (address)
     {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, message));
@@ -37,6 +40,6 @@ contract Fastforwardable is Serializable {
     }
 
     function getPlayersStorage()
-        private view
+        internal view
         returns (address[] storage);
 }
