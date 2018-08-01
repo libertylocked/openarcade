@@ -226,7 +226,7 @@ contract Controller is Fastforwardable, Ownable, Destructible {
         return info.control;
     }
 
-    function encodeControllerState()
+    function serialize()
         external view
         returns (bytes)
     {
@@ -245,10 +245,11 @@ contract Controller is Fastforwardable, Ownable, Destructible {
         playersStorage = playersArray;
     }
 
-    function fastforward(bytes cstate)
-        private
+    function deserialize(bytes cstate)
+        internal
         returns (bool)
     {
+        // Note that this only goes forward!
         // the cstate is more than just game state
         // in controller the state is control + game state
         uint turn = cstate.sliceUint(0);

@@ -152,20 +152,20 @@ contract('TTTGame + Controller', (accounts) => {
       await setupGame(controller, player1, player2)
     })
     it('should encode correctly when board is empty', async () => {
-      const cstate = await controller.encodeControllerState.call()
+      const cstate = await controller.serialize.call()
       // player1 is in control. turn is 0. the board is empty
       assert.equal(cstate, encodeFixedUintArray([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
     })
     it('should encode info and gamestate (1)', async () => {
       await controller.play(encodeAction(1, 1), { from: player1 })
-      const cstate = await controller.encodeControllerState.call()
+      const cstate = await controller.serialize.call()
       // player2 is in control. turn is 1
       assert.equal(cstate, encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0]))
     })
     it('should encode info and gamestate (2)', async () => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
-      const cstate = await controller.encodeControllerState.call()
+      const cstate = await controller.serialize.call()
       assert.equal(cstate, encodeFixedUintArray([2, 1, 0, 2, 0, 0, 1, 0, 0, 0, 0]))
     })
   })
@@ -197,7 +197,7 @@ contract('TTTGame + Controller', (accounts) => {
       // game should not be in terminal state
       assert.isFalse(await controller.terminal.call())
       // check controller state
-      const actualCstate = await controller.encodeControllerState.call()
+      const actualCstate = await controller.serialize.call()
       assert.equal(actualCstate, cstate)
     })
     it('should be playable after fastforwarding', async () => {

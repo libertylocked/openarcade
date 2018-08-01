@@ -1,10 +1,12 @@
 pragma solidity 0.4.24;
 
+import "./Serializable.sol";
+
 
 // An abstract contract that supports state fastforward
 // Note that the contract implementing this interface should check if
 //  the state is forward (vs. backward) before setting the state
-contract Fastforwardable {
+contract Fastforwardable is Serializable {
     function requestFastforward(
         bytes cstate, bytes32[] rs, bytes32[] ss, uint8[] vs)
         external
@@ -23,10 +25,8 @@ contract Fastforwardable {
             require(recover(cstateHash, rs[i], ss[i], vs[i]) == players[i]);
         }
         // all checks ok - set state
-        require(fastforward(cstate));
+        require(deserialize(cstate));
     }
-
-    function encodeControllerState() external view returns (bytes);
 
     function recover(bytes32 message, bytes32 r, bytes32 s, uint8 v)
         private pure returns (address)
@@ -39,6 +39,4 @@ contract Fastforwardable {
     function getPlayersStorage()
         private view
         returns (address[] storage);
-
-    function fastforward(bytes cstate) private returns (bool);
 }
