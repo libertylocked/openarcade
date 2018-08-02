@@ -8,6 +8,6 @@ contract RXRandomDeserializeMock is RXRandom {
     function deserializeExternal(bytes data)
         external
     {
-        require(deserialize(data));
+        require(deserialize(data), "deserialize fails");
     }
 }
