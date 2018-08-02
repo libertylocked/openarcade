@@ -232,6 +232,11 @@ contract Controller is Fastforwardable, Ownable, Destructible {
     {
         // XXX: should encode Random state too
         // encode turn, control, game state
+        // XXX: should also allow serialization in other states
+        require(
+            lifecycle == LifeCycle.Playing,
+            "can only serialize during playing state"
+        );
         return abi.encodePacked(
             info.turn, info.control, Connect.encodeState(state));
     }
@@ -253,7 +258,9 @@ contract Controller is Fastforwardable, Ownable, Destructible {
         // the cstate is more than just game state
         // in controller the state is control + game state
         uint turn = cstate.sliceUint(0);
-        require(turn >= info.turn, "cannot fastforward to a previous state");
+        if (turn < info.turn) {
+            return false;
+        }
         // set turn
         info.turn = turn;
         // set control

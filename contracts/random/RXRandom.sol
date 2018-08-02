@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../access/Relayable.sol";
+import "../statechan/Serializable.sol";
 import "./IRandom.sol";
 
 
@@ -18,7 +19,7 @@ import "./IRandom.sol";
 //
 // The state goes like this
 // InitialCommit -> InitialReveal -> Ready -> PendingUpdate -> Ready -> ...
-contract RXRandom is Ownable, Relayable {
+contract RXRandom is Ownable, Relayable, Serializable {
     mapping(address => bool) public players;
     address[] public playersArray;
     mapping(address => bytes32) public commits;
@@ -183,6 +184,35 @@ contract RXRandom is Ownable, Relayable {
         returns (uint)
     {
         return playersArray.length;
+    }
+
+    function serialize()
+        external view
+        returns (bytes)
+    {
+        // the serialized state is
+        // [state, ringturn, seed, current, index, commits and reveals]
+        // every players last commit and reveal
+        bytes memory cr;
+        // This is kind of expensive since it re-allocates the buffer every
+        // loop. However it is probably OK, since this function is only
+        // expected to be called client-side (in local EVM)
+        for (uint i = 0; i < playersArray.length; i++) {
+            cr = abi.encodePacked(cr, commits[playersArray[i]],
+                reveals[playersArray[i]]);
+        }
+        return abi.encodePacked(uint(state), ringTurn, seed, current, index,
+            cr);
+    }
+
+    /* Internal functions */
+
+    function deserialize(bytes data)
+        internal
+        returns (bool)
+    {
+        // TODO
+        return true;
     }
 
     /* Private functions */
