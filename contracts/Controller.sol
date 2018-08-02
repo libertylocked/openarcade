@@ -1,8 +1,6 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
 import "./util/BytesUtil.sol";
 import "./statechan/Fastforwardable.sol";
 import "./random/RXRandom.sol";
@@ -10,7 +8,7 @@ import "./Connect.sol";
 import "./TTTGame.sol";
 
 
-contract Controller is Fastforwardable, Ownable, Destructible {
+contract Controller is Fastforwardable {
     using SafeMath for uint;
     using BytesUtil for bytes;
 
