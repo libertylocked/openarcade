@@ -7,6 +7,8 @@ import "./Serializable.sol";
 // Note that the contract implementing this interface should check if
 //  the state is forward (vs. backward) before setting the state
 contract Fastforwardable is Serializable {
+    bytes constant ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n32";
+
     function requestFastforward(
         bytes cstate, bytes32[] rs, bytes32[] ss, uint8[] vs)
         external
@@ -34,9 +36,8 @@ contract Fastforwardable is Serializable {
     function recover(bytes32 message, bytes32 r, bytes32 s, uint8 v)
         internal pure returns (address)
     {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, message));
-        return ecrecover(prefixedHash, v, r, s);
+        return ecrecover(
+            keccak256(abi.encodePacked(ETH_SIGN_PREFIX, message)), v, r, s);
     }
 
     function getPlayersStorage()

@@ -1,7 +1,9 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../util/BytesUtil.sol";
 import "../access/Relayable.sol";
+import "../statechan/Serializable.sol";
 import "./IRandom.sol";
 
 
@@ -18,11 +20,12 @@ import "./IRandom.sol";
 //
 // The state goes like this
 // InitialCommit -> InitialReveal -> Ready -> PendingUpdate -> Ready -> ...
-contract RXRandom is Ownable, Relayable {
+contract RXRandom is Ownable, Relayable, Serializable {
+    using BytesUtil for bytes;
+
     mapping(address => bool) public players;
     address[] public playersArray;
     mapping(address => bytes32) public commits;
-    mapping(address => uint) public reveals;
     State public state;
     uint public roundNeg2CommitCount;
     uint public roundNeg1CommitCount;
@@ -61,14 +64,6 @@ contract RXRandom is Ownable, Relayable {
         _;
     }
 
-    modifier onlyNotRevealed(address sender) {
-        require(
-            reveals[sender] == 0,
-            "player must not have already revealed"
-        );
-        _;
-    }
-
     modifier onlyDuring(State _state) {
         require(state == _state, "state must match");
         _;
@@ -78,7 +73,7 @@ contract RXRandom is Ownable, Relayable {
         public
         Relayable(_relayer)
     {
-        for (uint i = 0; i < _players.length; i++) {
+        for (uint i = 0; i < _players.length; ++i) {
             players[_players[i]] = true;
         }
         playersArray = _players;
@@ -161,6 +156,20 @@ contract RXRandom is Ownable, Relayable {
         return current;
     }
 
+    /**
+     * @dev Sets the contract state by deserializing an encoded state. This is
+     *  only callable by the owner, which typically is a smart contract.
+     * @param data The encoded state to set to
+     * @return True if deserialization is successful
+     */
+    function deserializeByOwner(bytes data)
+        external
+        onlyOwner
+        returns (bool)
+    {
+        return deserialize(data);
+    }
+
     /* Constant functions */
 
     function current()
@@ -185,6 +194,44 @@ contract RXRandom is Ownable, Relayable {
         return playersArray.length;
     }
 
+    function serialize()
+        external view
+        returns (bytes)
+    {
+        bytes32[] memory commitsArr = new bytes32[](playersArray.length);
+        for (uint i = 0; i < playersArray.length; ++i) {
+            commitsArr[i] = commits[playersArray[i]];
+        }
+        return abi.encodePacked(uint(state), ringTurn, seed, current, index,
+            roundNeg2CommitCount, roundNeg1CommitCount, commitsArr);
+    }
+
+    /* Internal functions */
+
+    function deserialize(bytes data)
+        internal
+        returns (bool)
+    {
+        uint[] memory s = data.toUintArray();
+        // check size
+        // the encoded data must be exact size
+        if (s.length != 7 + playersArray.length) {
+            return false;
+        }
+        state = State(s[0]);
+        ringTurn = s[1];
+        seed = s[2];
+        current = s[3];
+        index = s[4];
+        roundNeg2CommitCount = s[5];
+        roundNeg1CommitCount = s[6];
+        // restore commits and reveals
+        for (uint i = 0; i < playersArray.length; ++i) {
+            commits[playersArray[i]] = bytes32(s[7+i]);
+        }
+        return true;
+    }
+
     /* Private functions */
 
     function mChangeState(State newState)
@@ -206,21 +253,18 @@ contract RXRandom is Ownable, Relayable {
             "commit cannot be hashed zero"
         );
         commits[sender] = _hash;
-        reveals[sender] = 0; // once committed, reveal is no longer valid
         emit LogCommitted(sender, _hash);
     }
 
     function mReveal(address sender, uint _num)
         private
         onlyPlayer(sender)
-        onlyNotRevealed(sender)
     {
         // check commit
         require(
             keccak256(abi.encodePacked(_num)) == commits[sender],
             "reveal does not match commit"
         );
-        reveals[sender] = _num;
         // once revealed, commit is no longer valid
         commits[sender] = bytes32(0);
         emit LogRevealed(sender, _num);
