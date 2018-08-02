@@ -214,7 +214,8 @@ contract RXRandom is Ownable, Relayable, Serializable {
     {
         uint[] memory s = data.toUintArray();
         // check size
-        if (s.length < 7 + playersArray.length) {
+        // the encoded data must be exact size
+        if (s.length != 7 + playersArray.length) {
             return false;
         }
         state = State(s[0]);

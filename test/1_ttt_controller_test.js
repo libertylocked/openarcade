@@ -154,19 +154,31 @@ contract('TTTGame + Controller', (accounts) => {
     it('should encode correctly when board is empty', async () => {
       const cstate = await controller.serialize.call()
       // player1 is in control. turn is 0. the board is empty
-      assert.equal(cstate, encodeFixedUintArray([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+      const rng = new XRandomJS([1337, 9001])
+      assert.equal(cstate, encodeFixedUintArray([0, 1,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 0, 0, 0, 0, 0, 0, 0, 0]))
     })
     it('should encode info and gamestate (1)', async () => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       const cstate = await controller.serialize.call()
       // player2 is in control. turn is 1
-      assert.equal(cstate, encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0]))
+      const rng = new XRandomJS([1337, 9001])
+      assert.equal(cstate, encodeFixedUintArray([1, 2,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 0, 0, 0, 1, 0, 0, 0, 0]))
     })
     it('should encode info and gamestate (2)', async () => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
       const cstate = await controller.serialize.call()
-      assert.equal(cstate, encodeFixedUintArray([2, 1, 0, 2, 0, 0, 1, 0, 0, 0, 0]))
+      const rng = new XRandomJS([1337, 9001])
+      assert.equal(cstate, encodeFixedUintArray([2, 1,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 2, 0, 0, 1, 0, 0, 0, 0]))
     })
   })
   describe('request fastforward', () => {
@@ -175,7 +187,11 @@ contract('TTTGame + Controller', (accounts) => {
     })
     it('should allow players to vote to fastforward state', async () => {
       // create a state where player2 is in control, and (1, 1) is occupied by player 1
-      const cstate = encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const rng = new XRandomJS([1337, 9001])
+      const cstate = encodeFixedUintArray([1, 2,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 0, 0, 0, 1, 0, 0, 0, 0])
       const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
       // have both players sign the hash of cstate
       const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
@@ -202,7 +218,11 @@ contract('TTTGame + Controller', (accounts) => {
     })
     it('should be playable after fastforwarding', async () => {
       // the state is after player 1 made the first move at (1,1)
-      const cstate = encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const rng = new XRandomJS([1337, 9001])
+      const cstate = encodeFixedUintArray([1, 2,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 0, 0, 0, 1, 0, 0, 0, 0])
       const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
       const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
       const p2Sig = eutil.fromRpcSig(web3.eth.sign(player2, cstateHash))
@@ -222,7 +242,11 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.play(encodeAction(1, 2), { from: player1 })
     })
     it('should reject fastforward request if one of the sigs are not valid', async () => {
-      const cstate = encodeFixedUintArray([1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const rng = new XRandomJS([1337, 9001])
+      const cstate = encodeFixedUintArray([1, 2,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 0, 0, 0, 1, 0, 0, 0, 0])
       const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
       // only player 1 signs the state
       const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
@@ -242,7 +266,11 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
       // try to reset to initial state
-      const cstate = encodeFixedUintArray([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+      const rng = new XRandomJS([1337, 9001])
+      const cstate = encodeFixedUintArray([0, 1,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 0, 0, 0, 0, 0, 0, 0, 0])
       const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
       const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
       const p2Sig = eutil.fromRpcSig(web3.eth.sign(player2, cstateHash))

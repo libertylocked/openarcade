@@ -228,15 +228,15 @@ contract Controller is Fastforwardable {
         external view
         returns (bytes)
     {
-        // XXX: should encode Random state too
-        // encode turn, control, game state
         // XXX: should also allow serialization in other states
         require(
             lifecycle == LifeCycle.Playing,
             "can only serialize during playing state"
         );
+        bytes memory gameState = Connect.encodeState(state);
         return abi.encodePacked(
-            info.turn, info.control, Connect.encodeState(state));
+            info.turn, info.control, RXRandom(tools.random).serialize(),
+            gameState);
     }
 
     /* Internal functions */
@@ -253,8 +253,13 @@ contract Controller is Fastforwardable {
         returns (bool)
     {
         // Note that this only goes forward!
-        // the cstate is more than just game state
-        // in controller the state is control + game state
+        uint rngStateLen = (7 + playersArray.length) * 32;
+        if (cstate.length < 64 + rngStateLen) {
+            // cstate should at least have 2 words plus rngState, not counting
+            // game state
+            return false;
+        }
+        uint gameStateLen = cstate.length - 64 - rngStateLen;
         uint turn = cstate.sliceUint(0);
         if (turn < info.turn) {
             return false;
@@ -263,8 +268,13 @@ contract Controller is Fastforwardable {
         info.turn = turn;
         // set control
         info.control = cstate.sliceUint(32);
+        // set RNG state
+        if (!RXRandom(tools.random).deserializeByOwner(
+            cstate.slice(64, rngStateLen))) {
+            return false;
+        }
         // set game state
-        Connect.setState(state, cstate.slice(64, cstate.length - 64));
+        Connect.setState(state, cstate.slice(64 + rngStateLen, gameStateLen));
         emit LogStateFastforward();
         return true;
     }
