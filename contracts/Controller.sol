@@ -24,9 +24,11 @@ contract Controller is Fastforwardable {
     uint totalPoints;
     LifeCycle public lifecycle;
     // timer for timeout
-    // uint public timerExpire; // player in control must submit input by this time
+    bool public timeoutEnabled;
+    uint public timeoutDeadline; // player in control must submit input by this time
 
     uint constant public BET_AMOUNT = 1 ether;
+    uint constant public MIN_TIMEOUT_DURATION = 1000; // that is more than 2 hours
 
     enum LifeCycle {
         Depositing,
@@ -35,11 +37,13 @@ contract Controller is Fastforwardable {
         Withdrawing
     }
 
+    event LogGameStart(uint control);
     event LogPlayerMove(
-        address indexed player, uint pid, bytes action
+        uint indexed turn, address indexed player, uint pid, bytes action
     );
     event LogWithdraw(address player, uint amount);
     event LogStateFastforward(uint turn);
+    event LogTimeoutStarted(uint control, uint deadline);
 
     modifier onlyDuring(LifeCycle _status) {
         require(
@@ -138,6 +142,7 @@ contract Controller is Fastforwardable {
         );
         info.turn = 1;
         lifecycle = LifeCycle.Playing;
+        emit LogGameStart(info.control);
     }
 
     function play(bytes action)
@@ -165,10 +170,10 @@ contract Controller is Fastforwardable {
         Connect.update(state, tools, info, input);
         // update control
         info.control = Connect.next(state, info);
+        // emit log
+        emit LogPlayerMove(info.turn, msg.sender, pid, action);
         // update turn index
         ++info.turn;
-        // emit log
-        emit LogPlayerMove(msg.sender, pid, action);
     }
 
     function end()
@@ -212,6 +217,30 @@ contract Controller is Fastforwardable {
         points[msg.sender] = 0;
         msg.sender.transfer(sendAmount);
         emit LogWithdraw(msg.sender, sendAmount);
+    }
+
+    /**
+     * @dev Starts the timeout timer for Playing state
+     * This function is called by any player in the match, whenever the
+     * control player is not making his/her move.
+     * Once the timer is started, it can only be turned off by either the
+     * control player sending a move, or upon a successful state fastforward
+     * Note: This timer only handles timeout during Playing state! Starting
+     * and Depositing timeouts are automatically handled without manual timer
+     * starts.
+     * @param duration the duration of the timer, in number of blocks. There
+     *  is a minimal duration that must be met for fairness.
+     */
+    function startTimeout(uint duration)
+        external
+        onlyPlayer
+        onlyDuring(LifeCycle.Playing)
+    {
+        require(!timeoutEnabled, "timeout timer has already been started");
+        require(duration >= MIN_TIMEOUT_DURATION, "timeout duration too short");
+        timeoutEnabled = true;
+        timeoutDeadline = block.number + duration;
+        emit LogTimeoutStarted(info.control, timeoutDeadline);
     }
 
     function terminal()

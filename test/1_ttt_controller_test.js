@@ -62,10 +62,12 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.commit(newCommit(9001), { from: player2 })
       await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
       await controller.revealAndCommit(9001, newCommit(9002), { from: player2 })
-      await controller.start(0)
+      const tx = await controller.start(0)
       // the 1st number: sha3(1337 xor 9001) is
       // 0x4e66df4bdd547b751802471b8578ff25842645c69676a953cff51ab97f0006e6
       // player 1 should go first
+      assert.equal(tx.logs[0].event, 'LogGameStart')
+      assert.equal(tx.logs[0].args.control, 1)
       assert.equal(await controller.control(), 1)
     })
     it('should let player 2 go first if random number is odd', async () => {
@@ -73,10 +75,12 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.commit(newCommit(9002), { from: player2 })
       await controller.revealAndCommit(1337, newCommit(1338), { from: player1 })
       await controller.revealAndCommit(9002, newCommit(9002), { from: player2 })
-      await controller.start(0)
+      const tx = await controller.start(0)
       // the 1st number: sha3(1337 xor 9002) is
       // 0xd93d05651913279338de2ec0ab00dc6a13dc8c75c48a9de906cdc7712b825875
       // player 2 should go first
+      assert.equal(tx.logs[0].event, 'LogGameStart')
+      assert.equal(tx.logs[0].args.control, 2)
       assert.equal(await controller.control(), 2)
     })
   })
@@ -326,6 +330,33 @@ contract('TTTGame + Controller', (accounts) => {
         p1Sig.v,
         p2Sig.v
       ]))
+    })
+  })
+  describe('timeout during playing', () => {
+    describe('start timeout', () => {
+      it('should allow start timeout in initial playing state', async () => {
+        await setupGame(controller, player1, player2)
+        const minDuration = await controller.MIN_TIMEOUT_DURATION()
+        const tx = await controller.startTimeout(minDuration, { from: player1 })
+        // starting control is random, but in our example it should be player1
+        assert.equal(tx.logs[0].event, 'LogTimeoutStarted')
+        assert.equal(tx.logs[0].args.control, 1)
+        assert.equal(tx.logs[0].args.deadline.toString(16),
+          minDuration.plus(tx.receipt.blockNumber).toString(16))
+        // verify state
+        assert.isTrue(await controller.timeoutEnabled.call())
+        assert.equal((await controller.timeoutDeadline.call()).toString(16),
+          minDuration.plus(tx.receipt.blockNumber).toString(16))
+      })
+      it('should not allow start timeout in starting state', async () => {
+        const bet = await controller.BET_AMOUNT()
+        await controller.deposit({from: player1, value: bet})
+        await controller.deposit({from: player2, value: bet})
+        const minDuration = await controller.MIN_TIMEOUT_DURATION()
+        // now the game is in starting state
+        // start timeout should fail
+        await assertRevert(controller.startTimeout(minDuration, { from: player1 }))
+      })
     })
   })
 })

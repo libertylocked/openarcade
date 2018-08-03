@@ -14,4 +14,7 @@
 - Controller timeouts
   - Player should lose if misses his/her turn
   - Should work with fastforward and other state channel stuff
-  - Timeout during Depositing state
+  - Timeout during Playing state
+    - Should punish the control player in this state
+  - Timeout during Depositing and Starting state
+  　- Can simply refund everyone and end the game
