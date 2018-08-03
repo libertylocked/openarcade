@@ -1,12 +1,11 @@
 import abi from 'ethereumjs-abi'
 import eutil from 'ethereumjs-util'
+import { encodeFixedUintArray } from '../helpers/encoding'
 
 const TableRandom = artifacts.require('TableRandom')
 const ConnectMock = artifacts.require('ConnectMock')
 
 const encodeActionABI = (x, y) => eutil.bufferToHex(abi.rawEncode(['uint256', 'uint256'], [x, y]))
-const encodeFixedUintArray = (arr) => eutil.bufferToHex(
-  abi.rawEncode(arr.map(() => 'uint256'), arr))
 
 contract('TTT', (accounts) => {
   let connect

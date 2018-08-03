@@ -1,14 +1,12 @@
 import assertRevert from 'openzeppelin-solidity/test/helpers/assertRevert'
-import abi from 'ethereumjs-abi'
 import eutil from 'ethereumjs-util'
 import XRandomJS from '../helpers/xrandom'
+import { encodeFixedUintArray } from '../helpers/encoding'
 
 const RXRandom = artifacts.require('RXRandom')
 
 const newCommit = (x) => eutil.bufferToHex(XRandomJS.newCommit(x))
 const [owner, alice, bob, carol] = web3.eth.accounts
-const encodeFixedUintArray = (arr) => eutil.bufferToHex(
-  abi.rawEncode(arr.map(() => 'uint256'), arr))
 
 const aliceInput1 = 42
 const aliceInput2 = 43

@@ -17,7 +17,9 @@ library Connect {
     // This is the info about current match
     struct Info {
         uint playerCount;
+        // Turn 0 is the setup turn. Only init will be called during turn 0
         uint turn;
+        // The ID of player who is in control in the current turn
         uint control;
     }
 

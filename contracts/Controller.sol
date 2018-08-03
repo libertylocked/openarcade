@@ -23,6 +23,8 @@ contract Controller is Fastforwardable {
     mapping(address => uint) public points;
     uint totalPoints;
     LifeCycle public lifecycle;
+    // timer for timeout
+    // uint public timerExpire; // player in control must submit input by this time
 
     uint constant public BET_AMOUNT = 1 ether;
 
@@ -37,7 +39,7 @@ contract Controller is Fastforwardable {
         address indexed player, uint pid, bytes action
     );
     event LogWithdraw(address player, uint amount);
-    event LogStateFastforward();
+    event LogStateFastforward(uint turn);
 
     modifier onlyDuring(LifeCycle _status) {
         require(
@@ -134,6 +136,7 @@ contract Controller is Fastforwardable {
             state, tools, playersArray.length,
             initParams
         );
+        info.turn = 1;
         lifecycle = LifeCycle.Playing;
     }
 
@@ -172,7 +175,8 @@ contract Controller is Fastforwardable {
         external
         onlyDuring(LifeCycle.Playing)
     {
-        // game ends in terminal state
+        // in order for the game to end, the game must either be in terminal state,
+        // or player in control missed his/her move and timed out
         require(
             Connect.terminal(state, info),
             "game must be in terminal state"
@@ -228,15 +232,17 @@ contract Controller is Fastforwardable {
         external view
         returns (bytes)
     {
-        // XXX: should also allow serialization in other states
         require(
-            lifecycle == LifeCycle.Playing,
-            "can only serialize during playing state"
+            lifecycle == LifeCycle.Starting || lifecycle == LifeCycle.Playing,
+            "can only serialize during starting or playing state"
         );
-        bytes memory gameState = Connect.encodeState(state);
+        // Note that the lifecycle is not serialized. We take a little
+        // shortcut here - since the state can only be set forward, the
+        // lifecycle state cannot be deserialized to anything other than
+        // Playing.
         return abi.encodePacked(
-            info.turn, info.control, RXRandom(tools.random).serialize(),
-            gameState);
+            info.turn, info.control, random.serialize(),
+            Connect.encodeState(state));
     }
 
     /* Internal functions */
@@ -252,7 +258,6 @@ contract Controller is Fastforwardable {
         internal
         returns (bool)
     {
-        // Note that this only goes forward!
         uint rngStateLen = (7 + playersArray.length) * 32;
         if (cstate.length < 64 + rngStateLen) {
             // cstate should at least have 2 words plus rngState, not counting
@@ -261,21 +266,23 @@ contract Controller is Fastforwardable {
         }
         uint gameStateLen = cstate.length - 64 - rngStateLen;
         uint turn = cstate.sliceUint(0);
-        if (turn < info.turn) {
+        if (turn <= info.turn) {
+            // Only allow forward state!
             return false;
         }
+        // always set lifecycle to Playing
+        lifecycle = LifeCycle.Playing;
         // set turn
         info.turn = turn;
         // set control
         info.control = cstate.sliceUint(32);
         // set RNG state
-        if (!RXRandom(tools.random).deserializeByOwner(
-            cstate.slice(64, rngStateLen))) {
+        if (!random.deserializeByOwner(cstate.slice(64, rngStateLen))) {
             return false;
         }
         // set game state
         Connect.setState(state, cstate.slice(64 + rngStateLen, gameStateLen));
-        emit LogStateFastforward();
+        emit LogStateFastforward(turn);
         return true;
     }
 }
