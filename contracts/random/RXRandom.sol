@@ -20,7 +20,7 @@ import "./IRandom.sol";
 //
 // The state goes like this
 // InitialCommit -> InitialReveal -> Ready -> PendingUpdate -> Ready -> ...
-contract RXRandom is Ownable, Relayable, Serializable {
+contract RXRandom is IRandom, Ownable, Relayable, Serializable {
     using BytesUtil for bytes;
 
     mapping(address => bool) public players;
@@ -178,6 +178,13 @@ contract RXRandom is Ownable, Relayable, Serializable {
         returns (uint)
     {
         return current;
+    }
+
+    function index()
+        external view
+        returns (uint)
+    {
+        return index;
     }
 
     function ready()
