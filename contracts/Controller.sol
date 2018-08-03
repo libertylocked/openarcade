@@ -25,10 +25,10 @@ contract Controller is Fastforwardable {
     LifeCycle public lifecycle;
     // timer for timeout
     bool public timeoutEnabled;
-    uint public timeoutDeadline; // player in control must submit input by this time
+    uint public timeoutDeadline;
 
     uint constant public BET_AMOUNT = 1 ether;
-    uint constant public MIN_TIMEOUT_DURATION = 1000; // that is more than 2 hours
+    uint constant public MIN_TIMEOUT_DURATION = 1000; // more than 2 hours
 
     enum LifeCycle {
         Depositing,
@@ -237,7 +237,10 @@ contract Controller is Fastforwardable {
         onlyDuring(LifeCycle.Playing)
     {
         require(!timeoutEnabled, "timeout timer has already been started");
-        require(duration >= MIN_TIMEOUT_DURATION, "timeout duration too short");
+        require(
+            duration >= MIN_TIMEOUT_DURATION,
+            "timeout duration too short"
+        );
         timeoutEnabled = true;
         timeoutDeadline = block.number + duration;
         emit LogTimeoutStarted(info.control, timeoutDeadline);
