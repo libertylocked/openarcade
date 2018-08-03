@@ -14,3 +14,4 @@
 - Controller timeouts
   - Player should lose if misses his/her turn
   - Should work with fastforward and other state channel stuff
+  - Timeout during Depositing state
