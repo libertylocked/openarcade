@@ -20,7 +20,7 @@ import "./IRandom.sol";
 //
 // The state goes like this
 // InitialCommit -> InitialReveal -> Ready -> PendingUpdate -> Ready -> ...
-contract RXRandom is IRandom, Ownable, Relayable, Serializable {
+contract RXRandom is IRandom, Ownable, Relayable {
     using BytesUtil for bytes;
 
     mapping(address => bool) public players;
@@ -156,20 +156,6 @@ contract RXRandom is IRandom, Ownable, Relayable, Serializable {
         return current;
     }
 
-    /**
-     * @dev Sets the contract state by deserializing an encoded state. This is
-     *  only callable by the owner, which typically is a smart contract.
-     * @param data The encoded state to set to
-     * @return True if deserialization is successful
-     */
-    function deserializeByOwner(bytes data)
-        external
-        onlyOwner
-        returns (bool)
-    {
-        return deserialize(data);
-    }
-
     /* Constant functions */
 
     function current()
@@ -199,44 +185,6 @@ contract RXRandom is IRandom, Ownable, Relayable, Serializable {
         returns (uint)
     {
         return playersArray.length;
-    }
-
-    function serialize()
-        external view
-        returns (bytes)
-    {
-        bytes32[] memory commitsArr = new bytes32[](playersArray.length);
-        for (uint i = 0; i < playersArray.length; ++i) {
-            commitsArr[i] = commits[playersArray[i]];
-        }
-        return abi.encodePacked(uint(state), ringTurn, seed, current, index,
-            roundNeg2CommitCount, roundNeg1CommitCount, commitsArr);
-    }
-
-    /* Internal functions */
-
-    function deserialize(bytes data)
-        internal
-        returns (bool)
-    {
-        uint[] memory s = data.toUintArray();
-        // check size
-        // the encoded data must be exact size
-        if (s.length != 7 + playersArray.length) {
-            return false;
-        }
-        state = State(s[0]);
-        ringTurn = s[1];
-        seed = s[2];
-        current = s[3];
-        index = s[4];
-        roundNeg2CommitCount = s[5];
-        roundNeg1CommitCount = s[6];
-        // restore commits and reveals
-        for (uint i = 0; i < playersArray.length; ++i) {
-            commits[playersArray[i]] = bytes32(s[7+i]);
-        }
-        return true;
     }
 
     /* Private functions */

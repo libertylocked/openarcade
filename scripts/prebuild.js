@@ -51,8 +51,8 @@ const generateController = (controllerTmpl, gameName) => {
     'import "./statechan/Fastforwardable.sol";',
     'import "../statechan/Fastforwardable.sol";'
   ).replace(
-    'import "./random/RXRandom.sol";',
-    'import "../random/RXRandom.sol";'
+    'import "./random/SerializableRXRandom.sol";',
+    'import "../random/SerializableRXRandom.sol";'
   ).replace(
     'import "./TTTGame.sol";',
     `import { ${gameName} as Game } from "../${GAMES_FOLDER}/${gameName}.sol";`

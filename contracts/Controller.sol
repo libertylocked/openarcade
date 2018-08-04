@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./util/BytesUtil.sol";
 import "./statechan/Fastforwardable.sol";
-import "./random/RXRandom.sol";
+import "./random/SerializableRXRandom.sol";
 import "./Connect.sol";
 import "./TTTGame.sol";
 
@@ -15,7 +15,7 @@ contract Controller is Fastforwardable {
     Game.State state;
     Connect.Info info; // part of state game is not allowed to modify
     Connect.Tools tools;
-    RXRandom public random;
+    SerializableRXRandom public random;
     mapping(address => bool) public deposited;
     uint public depositedCount;
     mapping(address => uint) public players; // value is playerID
@@ -77,7 +77,7 @@ contract Controller is Fastforwardable {
             control: 0
         });
         // create RNG contract
-        random = new RXRandom(_players, address(this));
+        random = new SerializableRXRandom(_players, address(this));
         tools = Connect.Tools({
             random: IRandom(random)
         });
@@ -288,20 +288,15 @@ contract Controller is Fastforwardable {
 
     function deserialize(bytes cstate)
         internal
-        returns (bool)
     {
         uint rngStateLen = (7 + playersArray.length) * 32;
-        if (cstate.length < 64 + rngStateLen) {
-            // cstate should at least have 2 words plus rngState, not counting
-            // game state
-            return false;
-        }
+        require(
+            cstate.length >= 64 + rngStateLen,
+            "encoded state is too short"
+        );
         uint gameStateLen = cstate.length - 64 - rngStateLen;
         uint turn = cstate.sliceUint(0);
-        if (turn <= info.turn) {
-            // Only allow forward state!
-            return false;
-        }
+        require(turn > info.turn, "only forward state is allowed");
         // always set lifecycle to Playing
         lifecycle = LifeCycle.Playing;
         // set turn
@@ -309,12 +304,9 @@ contract Controller is Fastforwardable {
         // set control
         info.control = cstate.sliceUint(32);
         // set RNG state
-        if (!random.deserializeByOwner(cstate.slice(64, rngStateLen))) {
-            return false;
-        }
+        random.deserializeByOwner(cstate.slice(64, rngStateLen));
         // set game state
         Connect.setState(state, cstate.slice(64 + rngStateLen, gameStateLen));
         emit LogStateFastforward(turn);
-        return true;
     }
 }
