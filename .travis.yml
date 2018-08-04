@@ -5,6 +5,6 @@ node_js:
 before_install:
   - npm i -g npm@6
 script:
-  - npm run coverage
+  - npm run lint && npm run coverage
 after_success:
   - bash <(curl -s https://codecov.io/bash) -f coverage.json -X fix

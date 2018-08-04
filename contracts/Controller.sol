@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./util/BytesUtil.sol";
 import "./statechan/Fastforwardable.sol";
-import "./random/RXRandom.sol";
+import "./random/SerializableRXRandom.sol";
 import "./Connect.sol";
 import "./TTTGame.sol";
 
@@ -15,7 +15,7 @@ contract Controller is Fastforwardable {
     Game.State state;
     Connect.Info info; // part of state game is not allowed to modify
     Connect.Tools tools;
-    RXRandom public random;
+    SerializableRXRandom public random;
     mapping(address => bool) public deposited;
     uint public depositedCount;
     mapping(address => uint) public players; // value is playerID
@@ -23,8 +23,12 @@ contract Controller is Fastforwardable {
     mapping(address => uint) public points;
     uint totalPoints;
     LifeCycle public lifecycle;
+    // timer for timeout
+    bool public timeoutEnabled;
+    uint public timeoutDeadline;
 
     uint constant public BET_AMOUNT = 1 ether;
+    uint constant public MIN_TIMEOUT_DURATION = 1000; // more than 2 hours
 
     enum LifeCycle {
         Depositing,
@@ -33,11 +37,13 @@ contract Controller is Fastforwardable {
         Withdrawing
     }
 
+    event LogGameStart(uint control);
     event LogPlayerMove(
-        address indexed player, uint pid, bytes action
+        uint indexed turn, address indexed player, uint pid, bytes action
     );
     event LogWithdraw(address player, uint amount);
-    event LogStateFastforward();
+    event LogStateFastforward(uint turn);
+    event LogTimeoutStarted(uint control, uint deadline);
 
     modifier onlyDuring(LifeCycle _status) {
         require(
@@ -71,7 +77,7 @@ contract Controller is Fastforwardable {
             control: 0
         });
         // create RNG contract
-        random = new RXRandom(_players, address(this));
+        random = new SerializableRXRandom(_players, address(this));
         tools = Connect.Tools({
             random: IRandom(random)
         });
@@ -134,7 +140,9 @@ contract Controller is Fastforwardable {
             state, tools, playersArray.length,
             initParams
         );
+        info.turn = 1;
         lifecycle = LifeCycle.Playing;
+        emit LogGameStart(info.control);
     }
 
     function play(bytes action)
@@ -162,17 +170,18 @@ contract Controller is Fastforwardable {
         Connect.update(state, tools, info, input);
         // update control
         info.control = Connect.next(state, info);
+        // emit log
+        emit LogPlayerMove(info.turn, msg.sender, pid, action);
         // update turn index
         ++info.turn;
-        // emit log
-        emit LogPlayerMove(msg.sender, pid, action);
     }
 
     function end()
         external
         onlyDuring(LifeCycle.Playing)
     {
-        // game ends in terminal state
+        // in order for the game to end, the game must either be in terminal state,
+        // or player in control missed his/her move and timed out
         require(
             Connect.terminal(state, info),
             "game must be in terminal state"
@@ -210,6 +219,33 @@ contract Controller is Fastforwardable {
         emit LogWithdraw(msg.sender, sendAmount);
     }
 
+    /**
+     * @dev Starts the timeout timer for Playing state
+     * This function is called by any player in the match, whenever the
+     * control player is not making his/her move.
+     * Once the timer is started, it can only be turned off by either the
+     * control player sending a move, or upon a successful state fastforward
+     * Note: This timer only handles timeout during Playing state! Starting
+     * and Depositing timeouts are automatically handled without manual timer
+     * starts.
+     * @param duration the duration of the timer, in number of blocks. There
+     *  is a minimal duration that must be met for fairness.
+     */
+    function startTimeout(uint duration)
+        external
+        onlyPlayer
+        onlyDuring(LifeCycle.Playing)
+    {
+        require(!timeoutEnabled, "timeout timer has already been started");
+        require(
+            duration >= MIN_TIMEOUT_DURATION,
+            "timeout duration too short"
+        );
+        timeoutEnabled = true;
+        timeoutDeadline = block.number + duration;
+        emit LogTimeoutStarted(info.control, timeoutDeadline);
+    }
+
     function terminal()
         external view
         returns (bool)
@@ -228,15 +264,17 @@ contract Controller is Fastforwardable {
         external view
         returns (bytes)
     {
-        // XXX: should also allow serialization in other states
         require(
-            lifecycle == LifeCycle.Playing,
-            "can only serialize during playing state"
+            lifecycle == LifeCycle.Starting || lifecycle == LifeCycle.Playing,
+            "can only serialize during starting or playing state"
         );
-        bytes memory gameState = Connect.encodeState(state);
+        // Note that the lifecycle is not serialized. We take a little
+        // shortcut here - since the state can only be set forward, the
+        // lifecycle state cannot be deserialized to anything other than
+        // Playing.
         return abi.encodePacked(
-            info.turn, info.control, RXRandom(tools.random).serialize(),
-            gameState);
+            info.turn, info.control, random.serialize(),
+            Connect.encodeState(state));
     }
 
     /* Internal functions */
@@ -250,32 +288,25 @@ contract Controller is Fastforwardable {
 
     function deserialize(bytes cstate)
         internal
-        returns (bool)
     {
-        // Note that this only goes forward!
         uint rngStateLen = (7 + playersArray.length) * 32;
-        if (cstate.length < 64 + rngStateLen) {
-            // cstate should at least have 2 words plus rngState, not counting
-            // game state
-            return false;
-        }
+        require(
+            cstate.length >= 64 + rngStateLen,
+            "encoded state is too short"
+        );
         uint gameStateLen = cstate.length - 64 - rngStateLen;
         uint turn = cstate.sliceUint(0);
-        if (turn < info.turn) {
-            return false;
-        }
+        require(turn > info.turn, "only forward state is allowed");
+        // always set lifecycle to Playing
+        lifecycle = LifeCycle.Playing;
         // set turn
         info.turn = turn;
         // set control
         info.control = cstate.sliceUint(32);
         // set RNG state
-        if (!RXRandom(tools.random).deserializeByOwner(
-            cstate.slice(64, rngStateLen))) {
-            return false;
-        }
+        random.deserializeByOwner(cstate.slice(64, rngStateLen));
         // set game state
         Connect.setState(state, cstate.slice(64 + rngStateLen, gameStateLen));
-        emit LogStateFastforward();
-        return true;
+        emit LogStateFastforward(turn);
     }
 }

@@ -148,6 +148,13 @@ contract XRandom is IRandom, Ownable, Relayable {
         return seed;
     }
 
+    function index()
+        external view
+        returns (uint)
+    {
+        return index;
+    }
+
     function ready()
         external view
         returns (bool)

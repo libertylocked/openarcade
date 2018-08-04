@@ -13,5 +13,5 @@ contract Serializable {
     // The contract should parse the encoded data, and apply it to the current
     // state. Note that a contract that's only fastforwardable can fail on
     // backward changes.
-    function deserialize(bytes data) internal returns (bool);
+    function deserialize(bytes data) internal;
 }

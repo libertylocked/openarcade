@@ -26,6 +26,10 @@ contract TableRandom is IRandom {
         return rndTable[index];
     }
 
+    function index() external view returns (uint) {
+        return index;
+    }
+
     function ready() external view returns (bool) {
         return true;
     }

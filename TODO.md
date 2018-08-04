@@ -5,19 +5,16 @@
   - Move some code to library
   - Make RNG optional
   - Move some RNG code to library
-- Staged commit-reveal
-  - Every time player sends to `play` player makes a commit and reveals the previous commit
-  - Interleaved commit-reveal
-    - One player commit-reveal per round, updates the RNG seed
-    - Game calls `rng.refresh()` to request seed update
-- Init parameters
-  - Passing some optional init params into game lib's `init`
-- Games should request random before using next
+- Games should request random before using rng.next
   - Otherwise players know what the next numebrs are and can cheat
   - Some kind of async/await programming is needed in the games
     - Game requests RNG update, awaits it
     - RNG gets updated by player
     - Game gets the RNG
-- Maybe split this meta repo into different packages. Need to update those packages when project is done. Also maybe change project's dependencies to just use those.
-  - solidity-bytesutil
-  - eth-xrandom
+- Controller timeouts
+  - Player should lose if misses his/her turn
+  - Should work with fastforward and other state channel stuff
+  - Timeout during Playing state
+    - Should punish the control player in this state
+  - Timeout during Depositing and Starting state
+  　- Can simply refund everyone and end the game

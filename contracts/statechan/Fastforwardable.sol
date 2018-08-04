@@ -30,7 +30,7 @@ contract Fastforwardable is Serializable {
             );
         }
         // all checks ok - set state
-        require(deserialize(cstate), "fail to deserialize");
+        deserialize(cstate);
     }
 
     function recover(bytes32 message, bytes32 r, bytes32 s, uint8 v)
