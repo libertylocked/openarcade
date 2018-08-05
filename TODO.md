@@ -14,7 +14,11 @@
 - Controller timeouts
   - Player should lose if misses his/her turn
   - Should work with fastforward and other state channel stuff
-  - Timeout during Playing state
-    - Should punish the control player in this state
-  - Timeout during Depositing and Starting state
-  　- Can simply refund everyone and end the game
+  - Timeout during Playing state (S1+)
+    - If RNG is ready (Sx-1), should punish control player
+    - If RNG not ready (Sx-0), should punish ring turn player
+  - Timeout during Depositing state
+    - Can simply refund everyone and end the game
+  - Timeout during Starting state (S0)
+    - In this state the players set up RNG then anyone calls init
+    - Refund everyone? Alice can potentially refuse to reveal if the number turns out to be not favorable to her

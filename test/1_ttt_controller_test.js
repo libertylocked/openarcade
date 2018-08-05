@@ -154,7 +154,8 @@ contract('TTTGame + Controller', (accounts) => {
       await setupGame(controller, player1, player2)
       // player1 is in control. turn is 1. the board is empty
       const rng = new XRandomJS([1337, 9001])
-      assert.equal(await controller.serialize.call(), encodeFixedUintArray([1, 1,
+      // state index is 3 cause turn 1 and RNG ready
+      assert.equal(await controller.serialize.call(), encodeFixedUintArray([3, 1,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
         0, 0, 0, 0, 0, 0, 0, 0, 0]))
@@ -164,7 +165,8 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       // player2 is in control. turn is 2
       const rng = new XRandomJS([1337, 9001])
-      assert.equal(await controller.serialize.call(), encodeFixedUintArray([2, 2,
+      // state index is 5 cause turn 2 and RNG ready
+      assert.equal(await controller.serialize.call(), encodeFixedUintArray([5, 2,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
         0, 0, 0, 0, 1, 0, 0, 0, 0]))
@@ -174,22 +176,20 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.play(encodeAction(1, 1), { from: player1 })
       await controller.play(encodeAction(1, 0), { from: player2 })
       const rng = new XRandomJS([1337, 9001])
-      assert.equal(await controller.serialize.call(), encodeFixedUintArray([3, 1,
+      // state index is 7 cause turn 3 and RNG ready
+      assert.equal(await controller.serialize.call(), encodeFixedUintArray([7, 1,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
         0, 2, 0, 0, 1, 0, 0, 0, 0]))
     })
-    it('should encode info and game state during starting state (1)', async () => {
+    it('should not allow encoding during starting state', async () => {
       // game starts in deposit state, so both players deposit to advance the state to starting
       const bet = await controller.BET_AMOUNT()
       await controller.deposit({from: player1, value: bet})
       await controller.deposit({from: player2, value: bet})
       // RNG set up is not needed
       // because game is in starting state, turn is 0
-      assert.equal(await controller.serialize.call(), encodeFixedUintArray([0, 0, // turn, control
-        0, 0, 0, 0, 0, 0, 0, // rng
-        0, 0, // rng commits
-        0, 0, 0, 0, 0, 0, 0, 0, 0])) // board
+      await assertRevert(controller.serialize())
     })
   })
   describe('request fastforward', () => {
@@ -200,7 +200,8 @@ contract('TTTGame + Controller', (accounts) => {
       await controller.deposit({from: player2, value: bet})
       // fastforward to a state after player 1 has made the first move at (1, 1)
       const rng = new XRandomJS([1337, 9001])
-      const cstate = encodeFixedUintArray([2, 2,
+      // stateIndex is 5, cause it is turn 2 and RNG is ready
+      const cstate = encodeFixedUintArray([5, 2,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
         0, 0, 0, 0, 1, 0, 0, 0, 0])
@@ -231,7 +232,8 @@ contract('TTTGame + Controller', (accounts) => {
       await setupGame(controller, player1, player2)
       // create a state where player2 is in control, and (1, 1) is occupied by player 1
       const rng = new XRandomJS([1337, 9001])
-      const cstate = encodeFixedUintArray([2, 2,
+      // state index is 5 cause turn 2 and RNG ready
+      const cstate = encodeFixedUintArray([5, 2,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
         0, 0, 0, 0, 1, 0, 0, 0, 0])
@@ -262,7 +264,8 @@ contract('TTTGame + Controller', (accounts) => {
       await setupGame(controller, player1, player2)
       // the state is after player 1 made the first move at (1,1)
       const rng = new XRandomJS([1337, 9001])
-      const cstate = encodeFixedUintArray([2, 2,
+      // state index is 5 cause turn 2 and RNG ready
+      const cstate = encodeFixedUintArray([5, 2,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
         0, 0, 0, 0, 1, 0, 0, 0, 0])
@@ -287,7 +290,7 @@ contract('TTTGame + Controller', (accounts) => {
     it('should reject fastforward request if one of the sigs are not valid', async () => {
       await setupGame(controller, player1, player2)
       const rng = new XRandomJS([1337, 9001])
-      const cstate = encodeFixedUintArray([2, 2,
+      const cstate = encodeFixedUintArray([5, 2,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
         0, 0, 0, 0, 1, 0, 0, 0, 0])
@@ -306,21 +309,19 @@ contract('TTTGame + Controller', (accounts) => {
         0
       ]))
     })
-    it('should reject fastforward request if the target state is a previous state', async () => {
+    it('should reject fastforward request if the target state index has already been fastforwarded', async () => {
       await setupGame(controller, player1, player2)
-      await controller.play(encodeAction(1, 1), { from: player1 })
-      await controller.play(encodeAction(1, 0), { from: player2 })
-      // try to reset to the initial playing state where game is just inited
       const rng = new XRandomJS([1337, 9001])
-      const cstate = encodeFixedUintArray([1, 1,
+      // first set state to state index 7 (turn 3, RNG ready)
+      const cstate = encodeFixedUintArray([7, 2,
         2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
         newCommit(1338), newCommit(9002),
-        0, 0, 0, 0, 0, 0, 0, 0, 0])
+        0, 0, 2, 0, 1, 0, 0, 0, 0])
       const cstateHash = eutil.bufferToHex(eutil.keccak256(cstate))
       const p1Sig = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash))
       const p2Sig = eutil.fromRpcSig(web3.eth.sign(player2, cstateHash))
-      // players now request fastforward, should fail
-      await assertRevert(controller.requestFastforward(cstate, [
+      // players now request fastforward to set the state
+      await controller.requestFastforward(cstate, [
         eutil.bufferToHex(p1Sig.r),
         eutil.bufferToHex(p2Sig.r)
       ], [
@@ -329,6 +330,25 @@ contract('TTTGame + Controller', (accounts) => {
       ], [
         p1Sig.v,
         p2Sig.v
+      ])
+      // now try to FF backward to state index 5
+      const cstate2 = encodeFixedUintArray([5, 2,
+        2, 0, `0x${rng.seed.toString(16)}`, `0x${rng.next().toString(16)}`, 1, 2, 2,
+        newCommit(1338), newCommit(9002),
+        0, 0, 0, 0, 1, 0, 0, 0, 0])
+      const cstateHash2 = eutil.bufferToHex(eutil.keccak256(cstate2))
+      const p1Sig2 = eutil.fromRpcSig(web3.eth.sign(player1, cstateHash2))
+      const p2Sig2 = eutil.fromRpcSig(web3.eth.sign(player2, cstateHash2))
+      // players now request fastforward to set the state
+      await assertRevert(controller.requestFastforward(cstate2, [
+        eutil.bufferToHex(p1Sig2.r),
+        eutil.bufferToHex(p2Sig2.r)
+      ], [
+        eutil.bufferToHex(p1Sig2.s),
+        eutil.bufferToHex(p2Sig2.s)
+      ], [
+        p1Sig2.v,
+        p2Sig2.v
       ]))
     })
   })

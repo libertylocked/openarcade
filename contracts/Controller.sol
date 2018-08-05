@@ -23,6 +23,8 @@ contract Controller is Fastforwardable {
     mapping(address => uint) public points;
     uint totalPoints;
     LifeCycle public lifecycle;
+    // fastforward
+    uint public lastFastforwardStateIndex;
     // timer for timeout
     bool public timeoutEnabled;
     uint public timeoutDeadline;
@@ -265,15 +267,18 @@ contract Controller is Fastforwardable {
         returns (bytes)
     {
         require(
-            lifecycle == LifeCycle.Starting || lifecycle == LifeCycle.Playing,
-            "can only serialize during starting or playing state"
+            lifecycle == LifeCycle.Playing,
+            "can only serialize during playing state"
         );
-        // Note that the lifecycle is not serialized. We take a little
-        // shortcut here - since the state can only be set forward, the
-        // lifecycle state cannot be deserialized to anything other than
-        // Playing.
+        // The lowest bit is RNG-ready bit, we use that to differentiate
+        uint stateIndex = info.turn.mul(2);
+        if (random.ready()) {
+            ++stateIndex;
+        }
+        // Note that the lifecycle is not serialized, because it can be
+        // referred from turn index
         return abi.encodePacked(
-            info.turn, info.control, random.serialize(),
+            stateIndex, info.control, random.serialize(),
             Connect.encodeState(state));
     }
 
@@ -295,16 +300,40 @@ contract Controller is Fastforwardable {
             "encoded state is too short"
         );
         uint gameStateLen = cstate.length - 64 - rngStateLen;
-        uint turn = cstate.sliceUint(0);
-        require(turn > info.turn, "only forward state is allowed");
-        // always set lifecycle to Playing
-        lifecycle = LifeCycle.Playing;
-        // set turn
+        uint stateIndex = cstate.sliceUint(0);
+        uint turn = stateIndex.div(2);
+        uint rngReadyBit = stateIndex % 2;
+        // Only allow FF to a state where turn is greater than the turn in the
+        // previously fastforward state.
+        // Note that the turn in FF request does not have to be greater than
+        // the turn in contract state, only that the turn in the FF request
+        // cannot have already been fastforwarded. This is to prevent attacks
+        // where player FF to a signed but uncommitted state then "commit" the
+        // next state on chain, invalidating rest of the uncommitted state. By
+        // doing so we allow offchain state signed by all parties to be the
+        // source of truth regardless of the state of contract, yet preventing
+        // FF backwards.
+        require(
+            stateIndex > lastFastforwardStateIndex,
+            "only forward state is allowed"
+        );
+        // sef lifecycle
+        if (turn == 0) {
+            lifecycle = LifeCycle.Starting;
+        } else {
+            lifecycle = LifeCycle.Playing;
+        }
+        // set turn and lastFFturn
         info.turn = turn;
+        lastFastforwardStateIndex = stateIndex;
         // set control
         info.control = cstate.sliceUint(32);
         // set RNG state
         random.deserializeByOwner(cstate.slice(64, rngStateLen));
+        require(
+            random.ready() == (rngReadyBit == 1),
+            "RNG ready state mismatch"
+        );
         // set game state
         Connect.setState(state, cstate.slice(64 + rngStateLen, gameStateLen));
         emit LogStateFastforward(turn);
