@@ -182,15 +182,6 @@ contract('TTTGame + Controller', (accounts) => {
         newCommit(1338), newCommit(9002),
         0, 2, 0, 0, 1, 0, 0, 0, 0]))
     })
-    it('should not allow encoding during starting state', async () => {
-      // game starts in deposit state, so both players deposit to advance the state to starting
-      const bet = await controller.BET_AMOUNT()
-      await controller.deposit({from: player1, value: bet})
-      await controller.deposit({from: player2, value: bet})
-      // RNG set up is not needed
-      // because game is in starting state, turn is 0
-      await assertRevert(controller.serialize())
-    })
   })
   describe('request fastforward', () => {
     it('should allow players to vote to fastforward from starting to playing', async () => {

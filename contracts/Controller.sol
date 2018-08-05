@@ -266,10 +266,6 @@ contract Controller is Fastforwardable {
         external view
         returns (bytes)
     {
-        require(
-            lifecycle == LifeCycle.Playing,
-            "can only serialize during playing state"
-        );
         // The lowest bit is RNG-ready bit, we use that to differentiate
         uint stateIndex = info.turn.mul(2);
         if (random.ready()) {
@@ -313,6 +309,8 @@ contract Controller is Fastforwardable {
         // doing so we allow offchain state signed by all parties to be the
         // source of truth regardless of the state of contract, yet preventing
         // FF backwards.
+        // Another note: this also makes it only fastforwardable to Starting
+        // state where RNG is ready (all players committed)
         require(
             stateIndex > lastFastforwardStateIndex,
             "only forward state is allowed"
