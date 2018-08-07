@@ -31,10 +31,10 @@ contract Controller is Fastforwardable {
     bool public timeoutEnabled;
     uint public timeoutDeadline;
 
-    // XXX probably should be configurable
-    uint constant public BET_AMOUNT = 1 ether;
-    uint constant public DEPOSIT_DURATION = 1000;
-    uint constant public MIN_TIMEOUT_DURATION = 1000; // more than 2 hours
+    // tunables
+    uint public betAmount;
+    uint public depositDuration;
+    uint public minTimerDuration;
 
     enum LifeCycle {
         Depositing,
@@ -72,11 +72,19 @@ contract Controller is Fastforwardable {
         _;
     }
 
-    constructor(address[] _players) public {
+    constructor(address[] _players, uint _betAmount, uint _depositDuration,
+        uint _minTimerDuration)
+        public
+    {
+        // set players
+        playersArray = _players;
+        // set tunables
+        betAmount = _betAmount;
+        depositDuration = _depositDuration;
+        minTimerDuration = _minTimerDuration;
         for (uint i = 0; i < _players.length; ++i) {
             players[_players[i]] = 1 + i;
         }
-        playersArray = _players;
         info = Connect.Info({
             playerCount: _players.length,
             turn: 0,
@@ -89,7 +97,7 @@ contract Controller is Fastforwardable {
         });
         // start in depositing stage
         lifecycle = LifeCycle.Depositing;
-        depositDeadline = block.number + DEPOSIT_DURATION;
+        depositDeadline = block.number + _minTimerDuration;
     }
 
     function deposit()
@@ -99,7 +107,7 @@ contract Controller is Fastforwardable {
         onlyDuring(LifeCycle.Depositing)
     {
         // must send exact bet
-        require(msg.value == BET_AMOUNT, "must send exact bet amount");
+        require(msg.value == betAmount, "must send exact bet amount");
         require(
             !deposited[msg.sender],
             "player must not have already deposited"
@@ -213,9 +221,9 @@ contract Controller is Fastforwardable {
         require(!withdrawn[msg.sender], "player has already withdrawn");
         uint sendAmount;
         if (totalPoints == 0) {
-            sendAmount = BET_AMOUNT;
+            sendAmount = betAmount;
         } else {
-            sendAmount = BET_AMOUNT.mul(playersArray.length)
+            sendAmount = betAmount.mul(playersArray.length)
                 .div(totalPoints).mul(points[msg.sender]);
         }
         withdrawn[msg.sender] = true;
@@ -255,7 +263,7 @@ contract Controller is Fastforwardable {
     {
         require(!timeoutEnabled, "timeout timer has already been started");
         require(
-            duration >= MIN_TIMEOUT_DURATION,
+            duration >= minTimerDuration,
             "timeout duration too short"
         );
         timeoutEnabled = true;
