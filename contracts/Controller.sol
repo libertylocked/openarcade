@@ -18,6 +18,7 @@ contract Controller is Fastforwardable {
     SerializableRXRandom public random;
     mapping(address => bool) public deposited;
     uint public depositedCount;
+    mapping(address => bool) public withdrawn;
     mapping(address => uint) public players; // value is playerID
     address[] public playersArray;
     mapping(address => uint) public points;
@@ -25,11 +26,14 @@ contract Controller is Fastforwardable {
     LifeCycle public lifecycle;
     // fastforward
     uint public lastFastforwardStateIndex;
-    // timer for timeout
+    // timers for timeouts
+    uint public depositDeadline;
     bool public timeoutEnabled;
     uint public timeoutDeadline;
 
+    // XXX probably should be configurable
     uint constant public BET_AMOUNT = 1 ether;
+    uint constant public DEPOSIT_DURATION = 1000;
     uint constant public MIN_TIMEOUT_DURATION = 1000; // more than 2 hours
 
     enum LifeCycle {
@@ -85,6 +89,7 @@ contract Controller is Fastforwardable {
         });
         // start in depositing stage
         lifecycle = LifeCycle.Depositing;
+        depositDeadline = block.number + DEPOSIT_DURATION;
     }
 
     function deposit()
@@ -204,21 +209,31 @@ contract Controller is Fastforwardable {
         onlyPlayer
         onlyDuring(LifeCycle.Withdrawing)
     {
-        require(
-            points[msg.sender] > 0,
-            "player can only withdraw if player's score is not zero"
-        );
+        require(deposited[msg.sender], "player never deposited");
+        require(!withdrawn[msg.sender], "player has already withdrawn");
         uint sendAmount;
         if (totalPoints == 0) {
-            sendAmount = BET_AMOUNT.div(playersArray.length);
+            sendAmount = BET_AMOUNT;
         } else {
             sendAmount = BET_AMOUNT.mul(playersArray.length)
                 .div(totalPoints).mul(points[msg.sender]);
         }
-        // clear player points before transfer
-        points[msg.sender] = 0;
+        withdrawn[msg.sender] = true;
         msg.sender.transfer(sendAmount);
         emit LogWithdraw(msg.sender, sendAmount);
+    }
+
+    function depositTimeout()
+        external
+        onlyDuring(LifeCycle.Depositing)
+    {
+        require(
+            block.number >= depositDeadline,
+            "cannot cancel deposit before deadline"
+        );
+        // because during Depositing all players have zero score, setting
+        // state to withdrawing allows them to withdraw what they deposited
+        lifecycle = LifeCycle.Withdrawing;
     }
 
     /**
@@ -309,8 +324,8 @@ contract Controller is Fastforwardable {
         // doing so we allow offchain state signed by all parties to be the
         // source of truth regardless of the state of contract, yet preventing
         // FF backwards.
-        // Another note: this also makes it only fastforwardable to Starting
-        // state where RNG is ready (all players committed)
+        // Another note: the earliest state the contract can FF to is Starting
+        // with RNG ready
         require(
             stateIndex > lastFastforwardStateIndex,
             "only forward state is allowed"
