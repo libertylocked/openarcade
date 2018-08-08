@@ -28,7 +28,7 @@ contract Controller is Fastforwardable {
     uint public lastFastforwardStateIndex;
     // timers for timeouts
     uint public depositDeadline;
-    bool public timeoutEnabled;
+    bool public timerStarted;
     uint public timeoutDeadline;
 
     // tunables
@@ -43,13 +43,14 @@ contract Controller is Fastforwardable {
         Withdrawing
     }
 
+    event LogDeposit(address indexed player);
     event LogGameStart(uint control);
     event LogPlayerMove(
         uint indexed turn, address indexed player, uint pid, bytes action
     );
-    event LogWithdraw(address player, uint amount);
+    event LogWithdraw(address indexed player, uint amount);
     event LogStateFastforward(uint turn);
-    event LogTimeoutStarted(uint control, uint deadline);
+    event LogTimerStarted(uint turn, bool rngReady, uint deadline);
 
     modifier onlyDuring(LifeCycle _status) {
         require(
@@ -114,6 +115,7 @@ contract Controller is Fastforwardable {
         );
         deposited[msg.sender] = true;
         ++depositedCount;
+        emit LogDeposit(msg.sender);
         if (depositedCount == playersArray.length) {
             lifecycle = LifeCycle.Starting;
         }
@@ -126,7 +128,7 @@ contract Controller is Fastforwardable {
     {
         require(
             random.commit(msg.sender, inputHash),
-            "RNG commit fail"
+            "RNG commit fails"
         );
         return true;
     }
@@ -140,6 +142,10 @@ contract Controller is Fastforwardable {
             random.revealAndCommit(msg.sender, input, inputHash),
             "RNG reveal fails"
         );
+        // stop timeout timer upon RNG reveal
+        if (timerStarted) {
+            timerStarted = false;
+        }
         return true;
     }
 
@@ -189,6 +195,10 @@ contract Controller is Fastforwardable {
         emit LogPlayerMove(info.turn, msg.sender, pid, action);
         // update turn index
         ++info.turn;
+        // stop timeout timer
+        if (timerStarted) {
+            timerStarted = false;
+        }
     }
 
     function end()
@@ -231,10 +241,20 @@ contract Controller is Fastforwardable {
         emit LogWithdraw(msg.sender, sendAmount);
     }
 
-    function depositTimeout()
+    /**
+     * @dev Cancels the game and advances the controller to Depositing state.
+     * Can only be called during Depositing or Starting, and the deadline has
+     * passed. This is useful to cancel the game and refund players in case
+     * one or more players drop out during Depositing (by not commiting funds)
+     * or drop out during Starting (by not committing a number to RNG)
+     */
+    function cancelDeposit()
         external
-        onlyDuring(LifeCycle.Depositing)
     {
+        require(
+            lifecycle == LifeCycle.Depositing || lifecycle == LifeCycle.Starting,
+            "cancel deposit can only be called in depositing or starting state"
+        );
         require(
             block.number >= depositDeadline,
             "cannot cancel deposit before deadline"
@@ -247,28 +267,80 @@ contract Controller is Fastforwardable {
     /**
      * @dev Starts the timeout timer for Playing state
      * This function is called by any player in the match, whenever the
-     * control player is not making his/her move.
+     * control player is not making his/her move, or RNG ring turn player is
+     * not comitting his/her input.
      * Once the timer is started, it can only be turned off by either the
-     * control player sending a move, or upon a successful state fastforward
+     * control player sending a move, or RNG commit from ring turn player, or
+     * upon a successful state fastforward.
      * Note: This timer only handles timeout during Playing state! Starting
      * and Depositing timeouts are automatically handled without manual timer
      * starts.
      * @param duration the duration of the timer, in number of blocks. There
      *  is a minimal duration that must be met for fairness.
      */
-    function startTimeout(uint duration)
+    function startTimer(uint duration)
         external
         onlyPlayer
         onlyDuring(LifeCycle.Playing)
     {
-        require(!timeoutEnabled, "timeout timer has already been started");
+        require(!timerStarted, "timeout timer has already been started");
         require(
             duration >= minTimerDuration,
             "timeout duration too short"
         );
-        timeoutEnabled = true;
+        require(
+            Game.terminal(state, info) == false,
+            "cannot start timer in terminal state"
+        );
+        timerStarted = true;
         timeoutDeadline = block.number + duration;
-        emit LogTimeoutStarted(info.control, timeoutDeadline);
+        emit LogTimerStarted(info.turn, random.ready(), timeoutDeadline);
+    }
+
+    /**
+     * @dev Terminates the game when a player times out.
+     * This is an alternative `end` function. It sets players' score and
+     * advances the state to Withdrawing.
+     */
+    function timeout()
+        external
+        onlyDuring(LifeCycle.Playing)
+    {
+        require(timerStarted, "timeout timer not started");
+        require(
+            block.number >= timeoutDeadline,
+            "timeout deadline not met yet"
+        );
+        // calculate score
+        uint ppoints;
+        uint i;
+        for (i = 0; i < playersArray.length; ++i) {
+            ppoints = Connect.goal(state, info, players[playersArray[i]]);
+            points[playersArray[i]] = ppoints;
+            totalPoints = totalPoints.add(ppoints);
+        }
+        uint droppedOutPlayerID;
+        if (random.ready()) {
+            // if RNG is ready, the control player should be punished
+            droppedOutPlayerID = info.control;
+        } else {
+            // if RNG is not ready, the ring turn player should be punished
+            droppedOutPlayerID = random.ringTurn();
+        }
+        totalPoints = totalPoints.sub(
+            points[playersArray[droppedOutPlayerID]]);
+        points[playersArray[droppedOutPlayerID]] = 0;
+        // XXX: if players all have zero score, payout should still not be
+        // distributed to the dropped out player. So we make every player have
+        // 1 point, except the dropped out player
+        if (totalPoints == 0) {
+            for (i = 0; i < playersArray.length; ++i) {
+                points[playersArray[i]] = 1;
+            }
+            totalPoints = playersArray.length - 1;
+        }
+        // advance state
+        lifecycle = LifeCycle.Withdrawing;
     }
 
     function terminal()
@@ -329,9 +401,8 @@ contract Controller is Fastforwardable {
         // cannot have already been fastforwarded. This is to prevent attacks
         // where player FF to a signed but uncommitted state then "commit" the
         // next state on chain, invalidating rest of the uncommitted state. By
-        // doing so we allow offchain state signed by all parties to be the
-        // source of truth regardless of the state of contract, yet preventing
-        // FF backwards.
+        // doing so we allow offchain state signed by all parties to take
+        // precedence over the state of contract, yet preventing FF backwards.
         // Another note: the earliest state the contract can FF to is Starting
         // with RNG ready
         require(
@@ -357,6 +428,8 @@ contract Controller is Fastforwardable {
         );
         // set game state
         Connect.setState(state, cstate.slice(64 + rngStateLen, gameStateLen));
+        // stop playing timer
+        timerStarted = false;
         emit LogStateFastforward(turn);
     }
 }
