@@ -1,6 +1,3 @@
-- Commit-reveal RNG
-  - Add lock time
-  - Add timeout
 - Controller costs too much gas to deploy
   - Move some code to library
   - Make RNG optional
@@ -12,9 +9,13 @@
     - RNG gets updated by player
     - Game gets the RNG
 - Controller timeouts
-  - Player should lose if misses his/her turn
-  - Should work with fastforward and other state channel stuff
-  - Timeout during Playing state
-    - Should punish the control player in this state
-  - Timeout during Depositing and Starting state
-  　- Can simply refund everyone and end the game
+  - [x] Player should lose if misses his/her turn
+  - [x] Should work with fastforward and other state channel stuff
+  - [x] Timeout during Playing state (S1+)
+    - If RNG is ready (Sx-1), should punish control player
+    - If RNG not ready (Sx-0), should punish ring turn player
+  - [x] Timeout during Depositing state
+    - Can simply refund everyone and end the game
+  - [x] Timeout during Starting state (S0)
+    - [x] In this state the players set up RNG then anyone calls init
+    - [] Refund everyone? Alice can potentially refuse to reveal if the number turns out to be not favorable to her

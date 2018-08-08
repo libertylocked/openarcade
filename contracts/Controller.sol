@@ -18,17 +18,23 @@ contract Controller is Fastforwardable {
     SerializableRXRandom public random;
     mapping(address => bool) public deposited;
     uint public depositedCount;
+    mapping(address => bool) public withdrawn;
     mapping(address => uint) public players; // value is playerID
     address[] public playersArray;
     mapping(address => uint) public points;
     uint totalPoints;
     LifeCycle public lifecycle;
-    // timer for timeout
-    bool public timeoutEnabled;
+    // fastforward
+    uint public lastFastforwardStateIndex;
+    // timers for timeouts
+    uint public depositDeadline;
+    bool public timerStarted;
     uint public timeoutDeadline;
 
-    uint constant public BET_AMOUNT = 1 ether;
-    uint constant public MIN_TIMEOUT_DURATION = 1000; // more than 2 hours
+    // tunables
+    uint public betAmount;
+    uint public depositDuration;
+    uint public minTimerDuration;
 
     enum LifeCycle {
         Depositing,
@@ -37,13 +43,14 @@ contract Controller is Fastforwardable {
         Withdrawing
     }
 
+    event LogDeposit(address indexed player);
     event LogGameStart(uint control);
     event LogPlayerMove(
         uint indexed turn, address indexed player, uint pid, bytes action
     );
-    event LogWithdraw(address player, uint amount);
+    event LogWithdraw(address indexed player, uint amount);
     event LogStateFastforward(uint turn);
-    event LogTimeoutStarted(uint control, uint deadline);
+    event LogTimerStarted(uint turn, bool rngReady, uint deadline);
 
     modifier onlyDuring(LifeCycle _status) {
         require(
@@ -66,11 +73,19 @@ contract Controller is Fastforwardable {
         _;
     }
 
-    constructor(address[] _players) public {
+    constructor(address[] _players, uint _betAmount, uint _depositDuration,
+        uint _minTimerDuration)
+        public
+    {
+        // set players
+        playersArray = _players;
+        // set tunables
+        betAmount = _betAmount;
+        depositDuration = _depositDuration;
+        minTimerDuration = _minTimerDuration;
         for (uint i = 0; i < _players.length; ++i) {
             players[_players[i]] = 1 + i;
         }
-        playersArray = _players;
         info = Connect.Info({
             playerCount: _players.length,
             turn: 0,
@@ -83,6 +98,7 @@ contract Controller is Fastforwardable {
         });
         // start in depositing stage
         lifecycle = LifeCycle.Depositing;
+        depositDeadline = block.number + _minTimerDuration;
     }
 
     function deposit()
@@ -92,13 +108,14 @@ contract Controller is Fastforwardable {
         onlyDuring(LifeCycle.Depositing)
     {
         // must send exact bet
-        require(msg.value == BET_AMOUNT, "must send exact bet amount");
+        require(msg.value == betAmount, "must send exact bet amount");
         require(
             !deposited[msg.sender],
             "player must not have already deposited"
         );
         deposited[msg.sender] = true;
         ++depositedCount;
+        emit LogDeposit(msg.sender);
         if (depositedCount == playersArray.length) {
             lifecycle = LifeCycle.Starting;
         }
@@ -111,7 +128,7 @@ contract Controller is Fastforwardable {
     {
         require(
             random.commit(msg.sender, inputHash),
-            "RNG commit fail"
+            "RNG commit fails"
         );
         return true;
     }
@@ -125,6 +142,10 @@ contract Controller is Fastforwardable {
             random.revealAndCommit(msg.sender, input, inputHash),
             "RNG reveal fails"
         );
+        // stop timeout timer upon RNG reveal
+        if (timerStarted) {
+            timerStarted = false;
+        }
         return true;
     }
 
@@ -174,6 +195,10 @@ contract Controller is Fastforwardable {
         emit LogPlayerMove(info.turn, msg.sender, pid, action);
         // update turn index
         ++info.turn;
+        // stop timeout timer
+        if (timerStarted) {
+            timerStarted = false;
+        }
     }
 
     function end()
@@ -202,48 +227,120 @@ contract Controller is Fastforwardable {
         onlyPlayer
         onlyDuring(LifeCycle.Withdrawing)
     {
-        require(
-            points[msg.sender] > 0,
-            "player can only withdraw if player's score is not zero"
-        );
+        require(deposited[msg.sender], "player never deposited");
+        require(!withdrawn[msg.sender], "player has already withdrawn");
         uint sendAmount;
         if (totalPoints == 0) {
-            sendAmount = BET_AMOUNT.div(playersArray.length);
+            sendAmount = betAmount;
         } else {
-            sendAmount = BET_AMOUNT.mul(playersArray.length)
+            sendAmount = betAmount.mul(playersArray.length)
                 .div(totalPoints).mul(points[msg.sender]);
         }
-        // clear player points before transfer
-        points[msg.sender] = 0;
+        withdrawn[msg.sender] = true;
         msg.sender.transfer(sendAmount);
         emit LogWithdraw(msg.sender, sendAmount);
     }
 
     /**
+     * @dev Cancels the game and advances the controller to Depositing state.
+     * Can only be called during Depositing or Starting, and the deadline has
+     * passed. This is useful to cancel the game and refund players in case
+     * one or more players drop out during Depositing (by not commiting funds)
+     * or drop out during Starting (by not committing a number to RNG)
+     */
+    function cancelDeposit()
+        external
+    {
+        require(
+            lifecycle == LifeCycle.Depositing || lifecycle == LifeCycle.Starting,
+            "cancel deposit can only be called in depositing or starting state"
+        );
+        require(
+            block.number >= depositDeadline,
+            "cannot cancel deposit before deadline"
+        );
+        // because during Depositing all players have zero score, setting
+        // state to withdrawing allows them to withdraw what they deposited
+        lifecycle = LifeCycle.Withdrawing;
+    }
+
+    /**
      * @dev Starts the timeout timer for Playing state
      * This function is called by any player in the match, whenever the
-     * control player is not making his/her move.
+     * control player is not making his/her move, or RNG ring turn player is
+     * not comitting his/her input.
      * Once the timer is started, it can only be turned off by either the
-     * control player sending a move, or upon a successful state fastforward
+     * control player sending a move, or RNG commit from ring turn player, or
+     * upon a successful state fastforward.
      * Note: This timer only handles timeout during Playing state! Starting
      * and Depositing timeouts are automatically handled without manual timer
      * starts.
      * @param duration the duration of the timer, in number of blocks. There
      *  is a minimal duration that must be met for fairness.
      */
-    function startTimeout(uint duration)
+    function startTimer(uint duration)
         external
         onlyPlayer
         onlyDuring(LifeCycle.Playing)
     {
-        require(!timeoutEnabled, "timeout timer has already been started");
+        require(!timerStarted, "timeout timer has already been started");
         require(
-            duration >= MIN_TIMEOUT_DURATION,
+            duration >= minTimerDuration,
             "timeout duration too short"
         );
-        timeoutEnabled = true;
+        require(
+            Game.terminal(state, info) == false,
+            "cannot start timer in terminal state"
+        );
+        timerStarted = true;
         timeoutDeadline = block.number + duration;
-        emit LogTimeoutStarted(info.control, timeoutDeadline);
+        emit LogTimerStarted(info.turn, random.ready(), timeoutDeadline);
+    }
+
+    /**
+     * @dev Terminates the game when a player times out.
+     * This is an alternative `end` function. It sets players' score and
+     * advances the state to Withdrawing.
+     */
+    function timeout()
+        external
+        onlyDuring(LifeCycle.Playing)
+    {
+        require(timerStarted, "timeout timer not started");
+        require(
+            block.number >= timeoutDeadline,
+            "timeout deadline not met yet"
+        );
+        // calculate score
+        uint ppoints;
+        uint i;
+        for (i = 0; i < playersArray.length; ++i) {
+            ppoints = Connect.goal(state, info, players[playersArray[i]]);
+            points[playersArray[i]] = ppoints;
+            totalPoints = totalPoints.add(ppoints);
+        }
+        uint droppedOutPlayerID;
+        if (random.ready()) {
+            // if RNG is ready, the control player should be punished
+            droppedOutPlayerID = info.control;
+        } else {
+            // if RNG is not ready, the ring turn player should be punished
+            droppedOutPlayerID = random.ringTurn();
+        }
+        totalPoints = totalPoints.sub(
+            points[playersArray[droppedOutPlayerID]]);
+        points[playersArray[droppedOutPlayerID]] = 0;
+        // XXX: if players all have zero score, payout should still not be
+        // distributed to the dropped out player. So we make every player have
+        // 1 point, except the dropped out player
+        if (totalPoints == 0) {
+            for (i = 0; i < playersArray.length; ++i) {
+                points[playersArray[i]] = 1;
+            }
+            totalPoints = playersArray.length - 1;
+        }
+        // advance state
+        lifecycle = LifeCycle.Withdrawing;
     }
 
     function terminal()
@@ -264,16 +361,15 @@ contract Controller is Fastforwardable {
         external view
         returns (bytes)
     {
-        require(
-            lifecycle == LifeCycle.Starting || lifecycle == LifeCycle.Playing,
-            "can only serialize during starting or playing state"
-        );
-        // Note that the lifecycle is not serialized. We take a little
-        // shortcut here - since the state can only be set forward, the
-        // lifecycle state cannot be deserialized to anything other than
-        // Playing.
+        // The lowest bit is RNG-ready bit, we use that to differentiate
+        uint stateIndex = info.turn.mul(2);
+        if (random.ready()) {
+            ++stateIndex;
+        }
+        // Note that the lifecycle is not serialized, because it can be
+        // referred from turn index
         return abi.encodePacked(
-            info.turn, info.control, random.serialize(),
+            stateIndex, info.control, random.serialize(),
             Connect.encodeState(state));
     }
 
@@ -295,18 +391,45 @@ contract Controller is Fastforwardable {
             "encoded state is too short"
         );
         uint gameStateLen = cstate.length - 64 - rngStateLen;
-        uint turn = cstate.sliceUint(0);
-        require(turn > info.turn, "only forward state is allowed");
-        // always set lifecycle to Playing
-        lifecycle = LifeCycle.Playing;
-        // set turn
+        uint stateIndex = cstate.sliceUint(0);
+        uint turn = stateIndex.div(2);
+        uint rngReadyBit = stateIndex % 2;
+        // Only allow FF to a state where turn is greater than the turn in the
+        // previously fastforward state.
+        // Note that the turn in FF request does not have to be greater than
+        // the turn in contract state, only that the turn in the FF request
+        // cannot have already been fastforwarded. This is to prevent attacks
+        // where player FF to a signed but uncommitted state then "commit" the
+        // next state on chain, invalidating rest of the uncommitted state. By
+        // doing so we allow offchain state signed by all parties to take
+        // precedence over the state of contract, yet preventing FF backwards.
+        // Another note: the earliest state the contract can FF to is Starting
+        // with RNG ready
+        require(
+            stateIndex > lastFastforwardStateIndex,
+            "only forward state is allowed"
+        );
+        // sef lifecycle
+        if (turn == 0) {
+            lifecycle = LifeCycle.Starting;
+        } else {
+            lifecycle = LifeCycle.Playing;
+        }
+        // set turn and lastFFturn
         info.turn = turn;
+        lastFastforwardStateIndex = stateIndex;
         // set control
         info.control = cstate.sliceUint(32);
         // set RNG state
         random.deserializeByOwner(cstate.slice(64, rngStateLen));
+        require(
+            random.ready() == (rngReadyBit == 1),
+            "RNG ready state mismatch"
+        );
         // set game state
         Connect.setState(state, cstate.slice(64 + rngStateLen, gameStateLen));
+        // stop playing timer
+        timerStarted = false;
         emit LogStateFastforward(turn);
     }
 }

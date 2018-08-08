@@ -7,4 +7,6 @@ module.exports = (deployer, network, accounts) => {
   deployer.link(BytesUtil, [Game, Controller])
   deployer.deploy(Game)
   deployer.link(Game, Controller)
+  deployer.deploy(Controller, [accounts[0], accounts[1]],
+    web3.toWei(1, 'ether'), 10, 10)
 }
