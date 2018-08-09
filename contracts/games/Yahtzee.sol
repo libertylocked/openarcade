@@ -76,7 +76,7 @@ library Yahtzee {
 
     function update(
         State storage state, Connect.Tools storage tools,
-        Connect.Info storage info, Connect.Input memory input)
+        Connect.Info storage /*info*/, Connect.Input memory input)
         internal
     {
         // consume roll
@@ -121,7 +121,6 @@ library Yahtzee {
         internal view
         returns (bool)
     {
-        // TODO
         if (info.control != input.pid) {
             return false;
         }
@@ -143,21 +142,30 @@ library Yahtzee {
         return true;
     }
 
-    function terminal(State storage /*state*/, Connect.Info storage /*info*/)
+    function terminal(State storage state, Connect.Info storage /*info*/)
         internal view
         returns (bool)
     {
-        // TODO
-        return false;
+        // game ends when all the combos are used (by all players)
+        for (uint i = 0; i < state.pickedCombos.length; ++i) {
+            if (state.pickedCombos[i] == 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function goal(
-        State storage /*state*/, Connect.Info storage /*info*/, uint /*pid*/)
+        State storage state, Connect.Info storage /*info*/, uint pid)
         internal view
         returns (uint)
     {
-        // TODO
-        return 0;
+        // get the sum of the player's score card
+        uint sumScore = 0;
+        for (uint i = 0; i < 13; ++i) {
+            sumScore += state.scoreCard[(pid - 1) * 13 + i];
+        }
+        return sumScore;
     }
 
     function decodeAction(bytes s)
@@ -189,7 +197,7 @@ library Yahtzee {
         state.rollsLeft = encodedState.sliceUint(32 + sz * 64);
         state.rollPick = encodedState.sliceUint(64 + sz * 64);
         uint[] memory dices = encodedState.sliceUintArray(96 + sz * 64, 5);
-        for (uint i = 0; i < 5; i++) {
+        for (uint i = 0; i < 5; ++i) {
             state.dices[i] = dices[i];
         }
     }
