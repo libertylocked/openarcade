@@ -23,6 +23,7 @@ library Yahtzee {
         uint rollsLeft;
         uint rollPick; // dices picked to reroll - only lowest 5 bits are used
         uint[5] dices;
+        uint control;
     }
 
     struct Action {
@@ -59,43 +60,39 @@ library Yahtzee {
         state.pickedCombos = new uint[](playerCount * 13);
         state.rollPick = 31;
         state.rollsLeft = 3;
+        state.control = 1;
         return 1;
     }
 
-    function next(State storage state, Connect.Info storage info)
+    function next(State storage state, Connect.Info storage /*info*/)
         internal view
         returns (uint)
     {
-        // alternate if no rolls left
-        if (state.rollsLeft == 0) {
-            return (info.control % info.playerCount).add(1);
-        }
-        // otherwise the same player
-        return info.control;
+        return state.control;
     }
 
     function update(
         State storage state, Connect.Tools storage tools,
-        Connect.Info storage /*info*/, Connect.Input memory input)
+        Connect.Info storage info, Connect.Input memory input)
         internal
     {
         // consume roll
         state.rollsLeft = state.rollsLeft.sub(1);
         // use previous mask to roll
         if (state.rollPick & 1 == 1) {
-            state.dices[0] = tools.random.next();
+            state.dices[0] = tools.random.next() % 6 + 1;
         }
         if ((state.rollPick >> 1) & 1 == 1) {
-            state.dices[1] = tools.random.next();
+            state.dices[1] = tools.random.next() % 6 + 1;
         }
         if ((state.rollPick >> 2) & 1 == 1) {
-            state.dices[2] = tools.random.next();
+            state.dices[2] = tools.random.next() % 6 + 1;
         }
         if ((state.rollPick >> 3) & 1 == 1) {
-            state.dices[3] = tools.random.next();
+            state.dices[3] = tools.random.next() % 6 + 1;
         }
         if ((state.rollPick >> 4) & 1 == 1) {
-            state.dices[4] = tools.random.next();
+            state.dices[4] = tools.random.next() % 6 + 1;
         }
         // if no dice is picked to roll, end the turn
         if (state.rollPick == 0) {
@@ -109,10 +106,15 @@ library Yahtzee {
             state.pickedCombos[cidx] = 1;
             // calculate combo score
             state.scoreCard[cidx] = calcComboScore(state.dices, comb);
+            // go to next player
+            state.rollPick = 31;
+            state.rollsLeft = 3;
+            state.control = info.control % info.playerCount + 1;
         } else {
             // set mask for next roll
             state.rollPick = input.action.rollPick;
         }
+        tools.random.request();
     }
 
     function legal(
@@ -184,7 +186,7 @@ library Yahtzee {
     {
         return abi.encodePacked(
             state.scoreCard.length, state.scoreCard, state.pickedCombos,
-            state.rollsLeft, state.rollPick, state.dices
+            state.rollsLeft, state.rollPick, state.dices, state.control
         );
     }
 
@@ -200,6 +202,7 @@ library Yahtzee {
         for (uint i = 0; i < 5; ++i) {
             state.dices[i] = dices[i];
         }
+        state.control = encodedState.sliceUint(256 + sz * 64);
     }
 
     /* Private functions */
@@ -223,37 +226,32 @@ library Yahtzee {
         } else if (combo == Combination.Twos) {
             for (i = 0; i < 5; ++i) {
                 if (dices[i] == 2) {
-                    score += 1;
+                    score += 2;
                 }
-                score *= 2;
             }
         } else if (combo == Combination.Threes) {
             for (i = 0; i < 5; ++i) {
                 if (dices[i] == 3) {
-                    score += 1;
+                    score += 3;
                 }
-                score *= 3;
             }
         } else if (combo == Combination.Fours) {
             for (i = 0; i < 5; ++i) {
                 if (dices[i] == 4) {
-                    score += 1;
+                    score += 4;
                 }
-                score *= 4;
             }
         } else if (combo == Combination.Fives) {
             for (i = 0; i < 5; ++i) {
                 if (dices[i] == 5) {
-                    score += 1;
+                    score += 5;
                 }
-                score *= 5;
             }
         } else if (combo == Combination.Sixes) {
             for (i = 0; i < 5; ++i) {
                 if (dices[i] == 6) {
-                    score += 1;
+                    score += 6;
                 }
-                score *= 6;
             }
         } else if (combo == Combination.ThreeOfAKind) {
             for (i = 1; i < 7; ++i) {

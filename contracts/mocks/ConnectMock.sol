@@ -17,7 +17,7 @@ contract ConnectMock {
     constructor(uint playerCount, IRandom random) public {
         info = Connect.Info({
             playerCount: playerCount,
-            turn: 0,
+            turn: 1,
             control: 0
         });
         tools = Connect.Tools({
@@ -52,6 +52,7 @@ contract ConnectMock {
             action: Connect.decodeAction(action)
         });
         Connect.update(state, tools, info, input);
+        info.turn++;
     }
 
     function legal(uint pid, bytes action)
