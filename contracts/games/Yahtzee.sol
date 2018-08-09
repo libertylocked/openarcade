@@ -201,7 +201,7 @@ library Yahtzee {
         returns (uint)
     {
         uint score = 0;
-        uint[] memory counter = new uint[](7);
+        uint[7] memory counter;
         for (uint i = 0; i < 5; ++i) {
             counter[dices[i]] += 1;
         }
