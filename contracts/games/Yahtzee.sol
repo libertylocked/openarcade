@@ -19,7 +19,7 @@ library Yahtzee {
 
     struct State {
         uint[] scoreCard;
-        bool[] pickedCombos;
+        uint[] pickedCombos; // boolean flags for combos already picked
         uint rollsLeft;
         uint rollPick; // dices picked to reroll - only lowest 5 bits are used
         uint[5] dices;
@@ -30,13 +30,14 @@ library Yahtzee {
         Combination combPick;
     }
 
-    // A total of 12 combinations
+    // A total of 13 combinations
     enum Combination {
         Ones,
         Twos,
         Threes,
         Fours,
         Fives,
+        Sixes,
         ThreeOfAKind,
         FourOfAKind,
         FullHouse,
@@ -54,8 +55,8 @@ library Yahtzee {
         internal
         returns (uint)
     {
-        state.scoreCard = new uint[](playerCount * 12);
-        state.pickedCombos = new bool[](playerCount * 12);
+        state.scoreCard = new uint[](playerCount * 13);
+        state.pickedCombos = new uint[](playerCount * 13);
         state.rollPick = 31;
         state.rollsLeft = 3;
         return 1;
@@ -103,11 +104,11 @@ library Yahtzee {
         // if turn is zero, player's input must be a combination
         if (state.rollsLeft == 0) {
             Combination comb = input.action.combPick;
-            uint cidx = (input.pid - 1) * 12 + uint(comb);
+            uint cidx = (input.pid - 1) * 13 + uint(comb);
             // mark combo picked
-            state.pickedCombos[cidx] = true;
+            state.pickedCombos[cidx] = 1;
             // calculate combo score
-            state.scoreCard[cidx] = calcComboScore(state, input.pid, comb);
+            state.scoreCard[cidx] = calcComboScore(state.dices, comb);
         } else {
             // set mask for next roll
             state.rollPick = input.action.rollPick;
@@ -134,7 +135,8 @@ library Yahtzee {
                 return false;
             }
             // the combination cannot have already been picked
-            if (state.pickedCombos[(input.pid - 1) * 12 + uint(input.action.combPick)]) {
+            if (state.pickedCombos[
+                (input.pid - 1) * 13 + uint(input.action.combPick)] == 1) {
                 return false;
             }
         }
@@ -168,28 +170,148 @@ library Yahtzee {
         });
     }
 
-    function encodeState(State storage /*state*/)
+    function encodeState(State storage state)
         internal view
         returns (bytes)
     {
-        // TODO
-        return new bytes(0);
+        return abi.encodePacked(
+            state.scoreCard.length, state.scoreCard, state.pickedCombos,
+            state.rollsLeft, state.rollPick, state.dices
+        );
     }
 
-    function setState(State storage /*state*/, bytes /*encodedState*/)
+    function setState(State storage state, bytes encodedState)
         internal
     {
-        // TODO
-        return;
+        uint sz = encodedState.sliceUint(0);
+        state.scoreCard = encodedState.sliceUintArray(32, sz);
+        state.pickedCombos = encodedState.sliceUintArray(32 + sz * 32, sz);
+        state.rollsLeft = encodedState.sliceUint(32 + sz * 64);
+        state.rollPick = encodedState.sliceUint(64 + sz * 64);
+        uint[] memory dices = encodedState.sliceUintArray(96 + sz * 64, 5);
+        for (uint i = 0; i < 5; i++) {
+            state.dices[i] = dices[i];
+        }
     }
 
     /* Private functions */
 
-    function calcComboScore(State storage state, uint pid, Combination combo)
-        private
+    function calcComboScore(uint[5] storage dices, Combination combo)
+        private view
         returns (uint)
     {
-        // TODO
-        return 0;
+        uint score = 0;
+        uint[] memory counter = new uint[](7);
+        for (uint i = 0; i < 5; ++i) {
+            counter[dices[i]] += 1;
+        }
+
+        if (combo == Combination.Ones) {
+            for (i = 0; i < 5; ++i) {
+                if (dices[i] == 1) {
+                    score += 1;
+                }
+            }
+        } else if (combo == Combination.Twos) {
+            for (i = 0; i < 5; ++i) {
+                if (dices[i] == 2) {
+                    score += 1;
+                }
+                score *= 2;
+            }
+        } else if (combo == Combination.Threes) {
+            for (i = 0; i < 5; ++i) {
+                if (dices[i] == 3) {
+                    score += 1;
+                }
+                score *= 3;
+            }
+        } else if (combo == Combination.Fours) {
+            for (i = 0; i < 5; ++i) {
+                if (dices[i] == 4) {
+                    score += 1;
+                }
+                score *= 4;
+            }
+        } else if (combo == Combination.Fives) {
+            for (i = 0; i < 5; ++i) {
+                if (dices[i] == 5) {
+                    score += 1;
+                }
+                score *= 5;
+            }
+        } else if (combo == Combination.Sixes) {
+            for (i = 0; i < 5; ++i) {
+                if (dices[i] == 6) {
+                    score += 1;
+                }
+                score *= 6;
+            }
+        } else if (combo == Combination.ThreeOfAKind) {
+            for (i = 1; i < 7; ++i) {
+                if (counter[i] >= 3) {
+                    for (i = 0; i < 5; ++i) {
+                        score += dices[i];
+                    }
+                    break;
+                }
+            }
+        } else if (combo == Combination.FourOfAKind) {
+            for (i = 1; i < 7; ++i) {
+                if (counter[i] >= 4) {
+                    for (i = 0; i < 5; ++i) {
+                        score += dices[i];
+                    }
+                    break;
+                }
+            }
+        } else if (combo == Combination.FullHouse) {
+            uint threeAndTwo = 0;
+            for (i = 1; i < 7; ++i) {
+                if (counter[i] == 3) {
+                    threeAndTwo |= 1;
+                } else if (counter[i] == 2) {
+                    threeAndTwo |= 1 << 1;
+                }
+            }
+            if (threeAndTwo == 3) {
+                score += 25;
+            }
+        } else if (combo == Combination.SmallStraight) {
+            for (i = 1; i < 4; ++i) {
+                /* solium-disable-next-line operator-whitespace */
+                if (counter[i] > 0 &&
+                    counter[i + 1] > 0 &&
+                    counter[i + 2] > 0 &&
+                    counter[i + 3] > 0) {
+                    score += 30;
+                    break;
+                }
+            }
+        } else if (combo == Combination.LargeStraight) {
+            for (i = 1; i < 3; ++i) {
+                /* solium-disable-next-line operator-whitespace */
+                if (counter[i] > 0 &&
+                    counter[i + 1] > 0 &&
+                    counter[i + 2] > 0 &&
+                    counter[i + 3] > 0 &&
+                    counter[i + 4] > 0) {
+                    score += 40;
+                    break;
+                }
+            }
+        } else if (combo == Combination.Chance) {
+            for (i = 0; i < 5; ++i) {
+                score += dices[i];
+            }
+        } else if (combo == Combination.Yahtzee) {
+            for (i = 1; i < 7; ++i) {
+                if (counter[i] == 5) {
+                    score += 50;
+                    break;
+                }
+            }
+        }
+        return score;
     }
 }
