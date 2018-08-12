@@ -79,6 +79,19 @@ contract('Yahtzee', (accounts) => {
     })
   })
   describe('terminal', () => {
+    it('should return true if all combos are used', async () => {
+      const rng = await TableRandom.new([0, 1, 2, 3, 4, 5])
+      await connect.setRandom(rng.address)
+      for (let i = 0; i < 13; ++i) {
+        assert.isFalse((await connect.terminal.call()))
+        await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, 0))
+        await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, i))
+        assert.isFalse((await connect.terminal.call()))
+        await connect.update(2, encodeActionABI(0, 0, 0, 0, 0, 0))
+        await connect.update(2, encodeActionABI(0, 0, 0, 0, 0, i))
+      }
+      assert.isTrue((await connect.terminal.call()))
+    })
   })
   describe('goal', () => {
     it('should return correct score for Ones', async () => {
@@ -108,6 +121,20 @@ contract('Yahtzee', (accounts) => {
       await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, 0))
       await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, 3))
       assert.equal((await connect.goal.call(1)).toNumber(), 8)
+    })
+    it('should return correct score for Fives', async () => {
+      const rng = await TableRandom.new([0, 0, 0, 4, 0, 4])
+      await connect.setRandom(rng.address)
+      await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, 0))
+      await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, 4))
+      assert.equal((await connect.goal.call(1)).toNumber(), 10)
+    })
+    it('should return correct score for Sixes', async () => {
+      const rng = await TableRandom.new([0, 3, 4, 5, 5, 3])
+      await connect.setRandom(rng.address)
+      await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, 0))
+      await connect.update(1, encodeActionABI(0, 0, 0, 0, 0, 5))
+      assert.equal((await connect.goal.call(1)).toNumber(), 12)
     })
     it('should return correct score for Three of a kind (1)', async () => {
       // roll is [1 2 3 3 3]
