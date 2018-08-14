@@ -1,4 +1,4 @@
-.PHONY: all install compile test clean
+.PHONY: all node_modules compile test clean
 
 all: node_modules compile
 
