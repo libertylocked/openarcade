@@ -1,21 +1,10 @@
-- Controller costs too much gas to deploy
-  - Move some code to library
-  - Make RNG optional
-  - Move some RNG code to library
-- Games should request random before using rng.next
-  - Otherwise players know what the next numebrs are and can cheat
-  - Some kind of async/await programming is needed in the games
-    - Game requests RNG update, awaits it
-    - RNG gets updated by player
-    - Game gets the RNG
 - Controller timeouts
-  - [x] Player should lose if misses his/her turn
-  - [x] Should work with fastforward and other state channel stuff
-  - [x] Timeout during Playing state (S1+)
-    - If RNG is ready (Sx-1), should punish control player
-    - If RNG not ready (Sx-0), should punish ring turn player
-  - [x] Timeout during Depositing state
-    - Can simply refund everyone and end the game
   - [x] Timeout during Starting state (S0)
     - [x] In this state the players set up RNG then anyone calls init
-    - [] Refund everyone? Alice can potentially refuse to reveal if the number turns out to be not favorable to her
+    - [ ] Refund everyone? Alice can potentially refuse to reveal if the number turns out to be not favorable to her
+- Yahtzee RNG cheat
+  - [ ] If control is the same as RNG ring turn, player can predict the seed
+- At least one state channel demo app
+  - [ ] Game library
+  - [ ] Front end
+  - [ ] State channel
