@@ -64,31 +64,31 @@ contract('TTT Controller', (accounts) => {
   describe('deposit', () => {
     it('should reject duplicate deposits', async () => {
       const bet = await getBetAmount(controller)
-      await controller.deposit({from: player1, value: bet})
-      await assertRevert(controller.deposit({from: player1, value: bet}))
+      await controller.deposit({ from: player1, value: bet })
+      await assertRevert(controller.deposit({ from: player1, value: bet }))
     })
     it('should reject deposit whose value does not match bet amount', async () => {
       const bet = await getBetAmount(controller)
-      await assertRevert(controller.deposit({from: player1, value: bet.plus(1)}))
+      await assertRevert(controller.deposit({ from: player1, value: bet.plus(1) }))
     })
   })
   describe('timeout during depositing', () => {
     it('should not allow withdraw before deposit timeout', async () => {
       const bet = await getBetAmount(controller)
-      await controller.deposit({from: player1, value: bet})
-      await assertRevert(controller.cancelDeposit({from: player1}))
+      await controller.deposit({ from: player1, value: bet })
+      await assertRevert(controller.cancelDeposit({ from: player1 }))
     })
     it('should allow withdraw if deposit timeouts', async () => {
       const bet = await getBetAmount(controller)
       const curBlock = web3.eth.blockNumber
       const depositDuration = await controller.depositDuration.call()
-      await controller.deposit({from: player1, value: bet})
+      await controller.deposit({ from: player1, value: bet })
       await advanceToBlock(depositDuration.plus(curBlock).toNumber())
       // call deposit timeout
-      await controller.cancelDeposit({from: player1})
+      await controller.cancelDeposit({ from: player1 })
       assert.equal((await controller.lifecycle.call()).toNumber(), 3)
       // now player 1 should be able to withdraw
-      await controller.withdraw({from: player1})
+      await controller.withdraw({ from: player1 })
     })
   })
   describe('start', () => {
@@ -233,8 +233,8 @@ contract('TTT Controller', (accounts) => {
     it('should allow players to vote to fastforward from starting to playing', async () => {
       // only deposit but not set up RNG or call start yet
       const bet = await getBetAmount(controller)
-      await controller.deposit({from: player1, value: bet})
-      await controller.deposit({from: player2, value: bet})
+      await controller.deposit({ from: player1, value: bet })
+      await controller.deposit({ from: player2, value: bet })
       // fastforward to a state after player 1 has made the first move at (1, 1)
       const rng = new XRandomJS([1337, 9001])
       // stateIndex is 5, cause it is turn 2 and RNG is ready
@@ -393,8 +393,8 @@ contract('TTT Controller', (accounts) => {
     it('should refund all players if timeout during starting', async () => {
       const bet = await getBetAmount(controller)
       // only deposit but do not set up RNG
-      await controller.deposit({from: player1, value: bet})
-      await controller.deposit({from: player2, value: bet})
+      await controller.deposit({ from: player1, value: bet })
+      await controller.deposit({ from: player2, value: bet })
       // now advance blocks to timeout
       await advanceToBlock((await controller.depositDeadline.call()).toNumber())
       await controller.cancelDeposit()
@@ -449,8 +449,8 @@ contract('TTT Controller', (accounts) => {
       })
       it('should not allow starting timer in starting state', async () => {
         const bet = await getBetAmount(controller)
-        await controller.deposit({from: player1, value: bet})
-        await controller.deposit({from: player2, value: bet})
+        await controller.deposit({ from: player1, value: bet })
+        await controller.deposit({ from: player2, value: bet })
         const minDuration = await getMinTimerDuration(controller)
         // now the game is in starting state
         // start timeout should fail
